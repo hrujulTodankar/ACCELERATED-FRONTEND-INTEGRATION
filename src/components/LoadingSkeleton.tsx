@@ -1,0 +1,71 @@
+import React from 'react';
+
+interface LoadingSkeletonProps {
+  count?: number;
+  className?: string;
+}
+
+const LoadingSkeleton: React.FC<LoadingSkeletonProps> = ({ 
+  count = 1, 
+  className = '' 
+}) => {
+  return (
+    <>
+      {Array.from({ length: count }).map((_, index) => (
+        <div 
+          key={index} 
+          className={`p-6 animate-pulse ${className}`}
+        >
+          <div className="flex items-start space-x-4">
+            {/* Avatar placeholder */}
+            <div className="flex-shrink-0">
+              <div className="h-10 w-10 bg-gray-200 rounded-full"></div>
+            </div>
+            
+            {/* Content placeholder */}
+            <div className="flex-1 min-w-0">
+              {/* Header */}
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center space-x-2">
+                  <div className="h-6 w-20 bg-gray-200 rounded-full"></div>
+                  <div className="h-5 w-16 bg-gray-200 rounded"></div>
+                </div>
+                <div className="h-4 w-24 bg-gray-200 rounded"></div>
+              </div>
+
+              {/* Content text */}
+              <div className="space-y-2 mb-4">
+                <div className="h-4 bg-gray-200 rounded w-full"></div>
+                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+              </div>
+
+              {/* Progress bar */}
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="h-4 w-20 bg-gray-200 rounded"></div>
+                  <div className="h-4 w-12 bg-gray-200 rounded"></div>
+                </div>
+                <div className="h-2 bg-gray-200 rounded w-full">
+                  <div className="h-2 bg-gray-300 rounded" style={{ width: '60%' }}></div>
+                </div>
+              </div>
+
+              {/* Metadata */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="h-3 w-16 bg-gray-200 rounded"></div>
+                  <div className="h-3 w-20 bg-gray-200 rounded"></div>
+                  <div className="h-3 w-12 bg-gray-200 rounded"></div>
+                </div>
+                <div className="h-3 w-16 bg-gray-200 rounded"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </>
+  );
+};
+
+export default LoadingSkeleton;
