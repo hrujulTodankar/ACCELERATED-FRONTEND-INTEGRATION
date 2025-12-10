@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ModerationCardProps } from '../types';
 import { ThumbsUp, ThumbsDown, Clock, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import ConfidenceProgressBar from './ConfidenceProgressBar';
@@ -10,6 +10,8 @@ const ModerationCard: React.FC<ModerationCardProps & { onClick?: () => void }> =
   loading = false,
   onClick,
 }) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const [isTouched, setIsTouched] = useState(false);
   const getDecisionIcon = () => {
     switch (content.decision) {
       case 'approved':
@@ -45,6 +47,26 @@ const ModerationCard: React.FC<ModerationCardProps & { onClick?: () => void }> =
     return text.substring(0, maxLength) + '...';
   };
 
+  const handleMouseEnter = () => {
+    setIsHovered(true);
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+    setIsTouched(false);
+  };
+
+  const handleTouchStart = () => {
+    setIsTouched(true);
+  };
+
+  const handleTouchEnd = () => {
+    // Delay hiding to allow for button interactions
+    setTimeout(() => setIsTouched(false), 3000);
+  };
+
+  const showFeedbackButtons = content.decision === 'pending' && (isHovered || isTouched);
+
   if (loading) {
     return (
       <div className="p-6 animate-pulse">
@@ -64,9 +86,13 @@ const ModerationCard: React.FC<ModerationCardProps & { onClick?: () => void }> =
 
   return (
     <div
-      className={`p-6 hover:bg-gray-50 transition-colors duration-200 cursor-pointer ${
-        onClick ? 'cursor-pointer' : ''
-      }`}
+      className={`p-6 transition-all duration-200 ${
+        isHovered ? 'bg-gray-50 shadow-md' : 'hover:bg-gray-50'
+      } ${onClick ? 'cursor-pointer' : ''}`}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
       onClick={onClick}
     >
       <div className="flex items-start justify-between">
@@ -122,9 +148,9 @@ const ModerationCard: React.FC<ModerationCardProps & { onClick?: () => void }> =
         </div>
       </div>
 
-      {/* Feedback Bar - only show for pending items */}
-      {content.decision === 'pending' && (
-        <div className="mt-4 pt-4 border-t border-gray-200">
+      {/* Feedback Bar - show on hover/touch for pending items */}
+      {showFeedbackButtons && (
+        <div className="mt-4 pt-4 border-t border-gray-200 animate-in slide-in-from-top-2 duration-200">
           <FeedbackBar
             onFeedback={onFeedback}
             loading={loading}
