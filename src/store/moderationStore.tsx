@@ -140,9 +140,9 @@ export const useModerationStore = create<ModerationState>()(
           if (selectedItem) {
             const updatedItem = {
               ...selectedItem,
-              // Update confidence based on feedback
-              confidence: response.confidence,
-              timestamp: response.timestamp,
+              // Update confidence based on feedback and update timestamp
+              confidence: 0.95, // High confidence after human feedback
+              timestamp: new Date().toISOString(),
             };
             
             set(
@@ -156,6 +156,8 @@ export const useModerationStore = create<ModerationState>()(
               'submitFeedback'
             );
           }
+          
+          return response;
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Failed to submit feedback';
           get().setError('feedback', errorMessage);

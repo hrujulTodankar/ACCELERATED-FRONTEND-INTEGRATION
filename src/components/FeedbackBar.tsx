@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { FeedbackBarProps } from '../types';
-import { ThumbsUp, ThumbsDown, MessageSquare, Send } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, MessageSquare, Send, AlertCircle } from 'lucide-react';
 
 const FeedbackBar: React.FC<FeedbackBarProps> = ({
   onFeedback,
@@ -11,36 +11,58 @@ const FeedbackBar: React.FC<FeedbackBarProps> = ({
   const [thumbsDown, setThumbsDown] = useState(false);
   const [comment, setComment] = useState('');
   const [showCommentBox, setShowCommentBox] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleThumbsUp = () => {
-    setThumbsUp(!thumbsUp);
+    const newThumbsUp = !thumbsUp;
+    setThumbsUp(newThumbsUp);
     setThumbsDown(false);
-    if (!thumbsUp) {
-      submitFeedback(true);
+    
+    // If we're turning it on, show comment box
+    if (newThumbsUp && !thumbsUp) {
+      setShowCommentBox(true);
+    }
+    // If we're turning it off, hide comment box
+    if (!newThumbsUp && thumbsUp) {
+      setShowCommentBox(false);
+      setComment('');
     }
   };
 
   const handleThumbsDown = () => {
-    setThumbsDown(!thumbsDown);
+    const newThumbsDown = !thumbsDown;
+    setThumbsDown(newThumbsDown);
     setThumbsUp(false);
-    if (!thumbsDown) {
-      submitFeedback(false);
+    
+    // If we're turning it on, show comment box
+    if (newThumbsDown && !thumbsDown) {
+      setShowCommentBox(true);
+    }
+    // If we're turning it off, hide comment box
+    if (!newThumbsDown && thumbsDown) {
+      setShowCommentBox(false);
+      setComment('');
     }
   };
 
   const submitFeedback = async (isPositive: boolean) => {
     try {
+      setError(null); // Clear previous errors
       await onFeedback({
         thumbsUp: isPositive,
         comment: comment.trim() || undefined,
         userId: 'current-user', // This would come from auth context
       });
       
-      // Reset form
+      // Reset form on success
+      setThumbsUp(false);
+      setThumbsDown(false);
       setComment('');
       setShowCommentBox(false);
     } catch (error) {
       console.error('Failed to submit feedback:', error);
+      setError(error instanceof Error ? error.message : 'Failed to submit feedback. Please try again.');
+      // Don't reset on error so user can retry
     }
   };
 
@@ -101,18 +123,30 @@ const FeedbackBar: React.FC<FeedbackBarProps> = ({
               placeholder="Add your feedback comment (optional)..."
               className="flex-1 min-h-[80px] px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
               rows={3}
+              maxLength={500}
             />
             <button
               onClick={handleCommentSubmit}
               disabled={loading || (!thumbsUp && !thumbsDown)}
               className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Submit feedback"
             >
               <Send className="h-4 w-4" />
             </button>
           </div>
-          <p className="text-xs text-gray-500 mt-1">
-            {comment.length}/500 characters
-          </p>
+          <div className="flex justify-between items-center mt-1">
+            <p className="text-xs text-gray-500">
+              {comment.length}/500 characters
+            </p>
+            {(thumbsUp || thumbsDown) && !loading && (
+              <button
+                onClick={() => submitFeedback(thumbsUp)}
+                className="text-xs text-primary-600 hover:text-primary-700 underline"
+              >
+                Submit without comment
+              </button>
+            )}
+          </div>
         </div>
       )}
 
@@ -140,6 +174,20 @@ const FeedbackBar: React.FC<FeedbackBarProps> = ({
         <div className="flex items-center text-sm text-gray-500">
           <div className="animate-spin h-4 w-4 border-2 border-primary-500 border-t-transparent rounded-full mr-2"></div>
           Submitting feedback...
+        </div>
+      )}
+
+      {/* Error indicator */}
+      {error && (
+        <div className="flex items-center text-sm text-red-600 bg-red-50 px-3 py-2 rounded-md">
+          <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />
+          <span>{error}</span>
+          <button
+            onClick={() => setError(null)}
+            className="ml-auto text-red-400 hover:text-red-600"
+          >
+            ×
+          </button>
         </div>
       )}
     </div>

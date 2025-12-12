@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ModerationCardProps } from '../types';
+import { useModerationStore } from '../store/moderationStore';
 import { ThumbsUp, ThumbsDown, Clock, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import ConfidenceProgressBar from './ConfidenceProgressBar';
 import FeedbackBar from './FeedbackBar';
@@ -10,6 +11,7 @@ const ModerationCard: React.FC<ModerationCardProps & { onClick?: () => void }> =
   loading = false,
   onClick,
 }) => {
+  const { loading: storeLoading } = useModerationStore();
   const [isHovered, setIsHovered] = useState(false);
   const [isTouched, setIsTouched] = useState(false);
   const getDecisionIcon = () => {
@@ -153,7 +155,7 @@ const ModerationCard: React.FC<ModerationCardProps & { onClick?: () => void }> =
         <div className="mt-4 pt-4 border-t border-gray-200 animate-in slide-in-from-top-2 duration-200">
           <FeedbackBar
             onFeedback={onFeedback}
-            loading={loading}
+            loading={storeLoading.feedback}
           />
         </div>
       )}

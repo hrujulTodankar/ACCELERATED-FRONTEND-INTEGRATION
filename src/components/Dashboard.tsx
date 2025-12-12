@@ -18,6 +18,7 @@ const Dashboard: React.FC = () => {
     error,
     fetchItems,
     setSelectedItem,
+    submitFeedback,
     updateFilters,
     updatePagination,
   } = useModerationStore();
@@ -168,10 +169,7 @@ const Dashboard: React.FC = () => {
                     <ModerationCard
                       key={item.id}
                       content={item}
-                      onFeedback={(feedback) => {
-                        // Handle feedback submission
-                        console.log('Feedback submitted:', feedback);
-                      }}
+                      onFeedback={submitFeedback}
                       loading={false}
                       onClick={() => setSelectedItem(item)}
                     />

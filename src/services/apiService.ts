@@ -79,7 +79,18 @@ export const submitFeedback = async (feedback: Omit<FeedbackResponse, 'id' | 'ti
       timestamp: string;
     }> = await api.post('/feedback', feedback);
     
-    return response.data;
+    // For mock implementation, return a simulated response
+    if (response.data.success) {
+      return {
+        id: `feedback_${Date.now()}`,
+        thumbsUp: feedback.thumbsUp,
+        comment: feedback.comment,
+        timestamp: response.data.timestamp,
+        userId: feedback.userId,
+      };
+    }
+    
+    throw new Error('Feedback submission failed');
   } catch (error) {
     console.error('Error submitting feedback:', error);
     throw error;
