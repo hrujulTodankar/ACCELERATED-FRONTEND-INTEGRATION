@@ -3,6 +3,10 @@ import { useModerationStore } from '../store/moderationStore';
 import { mockModerationItems } from '../services/apiService';
 import FilterBar from './FilterBar';
 import ModerationCard from './ModerationCard';
+import AnalyticsPanel from './AnalyticsPanel';
+import NLPContextPanel from './NLPContextPanel';
+import TagsPanel from './TagsPanel';
+import StatusBadge from './StatusBadge';
 import LoadingSkeleton from './LoadingSkeleton';
 import ErrorState from './ErrorState';
 import Pagination from './Pagination';
@@ -18,6 +22,10 @@ const Dashboard: React.FC = () => {
     error,
     fetchItems,
     setSelectedItem,
+    fetchAnalytics,
+    fetchNLPContext,
+    fetchTags,
+    simulateRLUpdate,
     submitFeedback,
     updateFilters,
     updatePagination,
@@ -29,6 +37,40 @@ const Dashboard: React.FC = () => {
     // Load initial data - using mock data for now
     loadMockData();
   }, []);
+
+  useEffect(() => {
+    // Fetch additional data when an item is selected
+    if (selectedItem) {
+      const fetchAdditionalData = async () => {
+        try {
+          // Fetch analytics, NLP context, and tags in parallel
+          await Promise.all([
+            fetchAnalytics(selectedItem.id),
+            fetchNLPContext(selectedItem.id),
+            fetchTags(selectedItem.id),
+          ]);
+        } catch (error) {
+          console.error('Error fetching additional data:', error);
+        }
+      };
+      
+      fetchAdditionalData();
+    }
+  }, [selectedItem, fetchAnalytics, fetchNLPContext, fetchTags]);
+
+  // Simulate RL updates for adaptive UI refresh
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (items.length > 0) {
+        // Randomly update one item to simulate RL confidence changes
+        const randomIndex = Math.floor(Math.random() * items.length);
+        const itemToUpdate = items[randomIndex];
+        simulateRLUpdate(itemToUpdate.id);
+      }
+    }, 10000); // Update every 10 seconds
+
+    return () => clearInterval(interval);
+  }, [items, simulateRLUpdate]);
 
   const loadMockData = () => {
     // Simulate API call with mock data
@@ -198,29 +240,80 @@ const Dashboard: React.FC = () => {
           <div className="lg:col-span-1">
             {selectedItem ? (
               <div className="space-y-6">
-                {/* Selected item details would go here */}
+                {/* Basic Item Info */}
                 <div className="bg-white shadow rounded-lg p-6">
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">
-                    Selected Content
-                  </h3>
-                  <div className="text-sm text-gray-600">
-                    <p className="mb-2">
-                      <strong>ID:</strong> {selectedItem.id}
-                    </p>
-                    <p className="mb-2">
-                      <strong>Status:</strong> {selectedItem.decision}
-                    </p>
-                    <p className="mb-2">
-                      <strong>Confidence:</strong> {(selectedItem.confidence * 100).toFixed(1)}%
-                    </p>
-                    <p className="mb-2">
-                      <strong>Type:</strong> {selectedItem.type}
-                    </p>
-                    <p className="mb-2">
-                      <strong>Flagged:</strong> {selectedItem.flagged ? 'Yes' : 'No'}
-                    </p>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-medium text-gray-900">
+                      Content Details
+                    </h3>
+                    {selectedItem.statusBadge && (
+                      <StatusBadge
+                        status={selectedItem.statusBadge.type}
+                        lastUpdated={selectedItem.statusBadge.timestamp}
+                      />
+                    )}
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-xs text-gray-500">Content ID</p>
+                      <p className="text-sm font-mono">{selectedItem.id}</p>
+                    </div>
+                    
+                    <div className="flex justify-between">
+                      <div>
+                        <p className="text-xs text-gray-500">Status</p>
+                        <p className="text-sm font-medium capitalize">{selectedItem.decision}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Confidence</p>
+                        <p className="text-sm font-medium">{(selectedItem.confidence * 100).toFixed(1)}%</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex justify-between">
+                      <div>
+                        <p className="text-xs text-gray-500">Type</p>
+                        <p className="text-sm font-medium capitalize">{selectedItem.type}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Flagged</p>
+                        <p className="text-sm font-medium">{selectedItem.flagged ? 'Yes' : 'No'}</p>
+                      </div>
+                    </div>
+
+                    {selectedItem.rewardStatus && (
+                      <div>
+                        <p className="text-xs text-gray-500">Reward Status</p>
+                        <p className="text-sm font-medium capitalize">{selectedItem.rewardStatus}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
+
+                {/* Analytics Panel */}
+                {selectedItem.analytics && (
+                  <AnalyticsPanel
+                    analytics={selectedItem.analytics}
+                    loading={loading.analytics}
+                  />
+                )}
+
+                {/* NLP Context Panel */}
+                {selectedItem.nlpContext && (
+                  <NLPContextPanel
+                    nlpData={selectedItem.nlpContext}
+                    loading={loading.nlp}
+                  />
+                )}
+
+                {/* Tags Panel */}
+                {selectedItem.tags && (
+                  <TagsPanel
+                    tagsData={selectedItem.tags}
+                    loading={loading.tags}
+                  />
+                )}
               </div>
             ) : (
               <div className="bg-white shadow rounded-lg p-6">
@@ -230,7 +323,7 @@ const Dashboard: React.FC = () => {
                     No content selected
                   </h3>
                   <p className="mt-1 text-sm text-gray-500">
-                    Select a content item to view details and provide feedback.
+                    Select a content item to view detailed analytics, NLP analysis, and tags.
                   </p>
                 </div>
               </div>

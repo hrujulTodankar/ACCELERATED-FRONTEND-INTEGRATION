@@ -4,6 +4,7 @@ import { useModerationStore } from '../store/moderationStore';
 import { ThumbsUp, ThumbsDown, Clock, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import ConfidenceProgressBar from './ConfidenceProgressBar';
 import FeedbackBar from './FeedbackBar';
+import StatusBadge from './StatusBadge';
 
 const ModerationCard: React.FC<ModerationCardProps & { onClick?: () => void }> = ({
   content,
@@ -11,9 +12,13 @@ const ModerationCard: React.FC<ModerationCardProps & { onClick?: () => void }> =
   loading = false,
   onClick,
 }) => {
-  const { loading: storeLoading } = useModerationStore();
+  const { loading: storeLoading, items } = useModerationStore();
   const [isHovered, setIsHovered] = useState(false);
   const [isTouched, setIsTouched] = useState(false);
+  
+  // Check if this item was recently updated (within last 3 seconds)
+  const isRecentlyUpdated = content.lastUpdated ?
+    (Date.now() - new Date(content.lastUpdated).getTime()) < 3000 : false;
   const getDecisionIcon = () => {
     switch (content.decision) {
       case 'approved':
@@ -112,6 +117,12 @@ const ModerationCard: React.FC<ModerationCardProps & { onClick?: () => void }> =
                   Flagged
                 </span>
               )}
+              {content.statusBadge && (
+                <StatusBadge
+                  status={content.statusBadge.type}
+                  lastUpdated={content.statusBadge.timestamp}
+                />
+              )}
             </div>
             <div className="text-sm text-gray-500">
               {formatTimestamp(content.timestamp)}
@@ -130,22 +141,66 @@ const ModerationCard: React.FC<ModerationCardProps & { onClick?: () => void }> =
             <ConfidenceProgressBar
               confidence={content.confidence}
               decision={content.decision}
-              updating={false}
+              updating={isRecentlyUpdated}
             />
           </div>
 
-          {/* Metadata */}
-          <div className="flex items-center justify-between text-xs text-gray-500">
-            <div className="flex items-center space-x-4">
-              <span>Type: {content.type}</span>
-              <span>Length: {content.metadata.length} chars</span>
-              {content.metadata.language && (
-                <span>Lang: {content.metadata.language}</span>
-              )}
+          {/* Enhanced Metadata */}
+          <div className="space-y-2">
+            {/* Basic Info */}
+            <div className="flex items-center justify-between text-xs text-gray-500">
+              <div className="flex items-center space-x-4">
+                <span>Type: {content.type}</span>
+                <span>Length: {content.metadata.length} chars</span>
+                {content.metadata.language && (
+                  <span>Lang: {content.metadata.language}</span>
+                )}
+              </div>
+              <div className="text-xs text-gray-400">
+                ID: {content.id.substring(0, 8)}...
+              </div>
             </div>
-            <div className="text-xs text-gray-400">
-              ID: {content.id.substring(0, 8)}...
-            </div>
+
+            {/* NLP & Tags Preview */}
+            {(content.nlpContext || content.tags) && (
+              <div className="flex items-center justify-between text-xs">
+                {content.nlpContext && (
+                  <div className="flex items-center space-x-2">
+                    <span className="text-gray-500">Sentiment:</span>
+                    <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                      content.nlpContext.sentiment.label === 'positive' ? 'bg-green-100 text-green-700' :
+                      content.nlpContext.sentiment.label === 'negative' ? 'bg-red-100 text-red-700' :
+                      'bg-gray-100 text-gray-700'
+                    }`}>
+                      {content.nlpContext.sentiment.label}
+                    </span>
+                  </div>
+                )}
+                
+                {content.tags && content.tags.tags.length > 0 && (
+                  <div className="flex items-center space-x-1">
+                    <span className="text-gray-500">Tags:</span>
+                    <div className="flex space-x-1">
+                      {content.tags.tags.slice(0, 2).map((tag, index) => (
+                        <span key={index} className="px-1 py-0.5 bg-indigo-100 text-indigo-700 rounded text-xs">
+                          #{tag.label}
+                        </span>
+                      ))}
+                      {content.tags.tags.length > 2 && (
+                        <span className="text-gray-400">+{content.tags.tags.length - 2}</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Last Updated */}
+            {content.lastUpdated && (
+              <div className="text-xs text-gray-400">
+                Updated: {new Date(content.lastUpdated).toLocaleString()}
+              </div>
+            )}
           </div>
         </div>
       </div>

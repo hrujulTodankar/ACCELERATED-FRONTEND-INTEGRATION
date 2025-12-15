@@ -8,6 +8,14 @@ export interface ModerationResponse {
   flagged: boolean;
   type: 'text' | 'image' | 'video';
   metadata: ContentMetadata;
+  // Enhanced data from backend services
+  analytics?: AnalyticsResponse;
+  nlpContext?: NLPResponse;
+  tags?: TagResponse;
+  // Adaptive UI tracking
+  statusBadge?: StatusBadge;
+  lastUpdated?: string;
+  rewardStatus?: 'awaiting' | 'received';
 }
 
 export interface FeedbackResponse {
@@ -155,6 +163,12 @@ export interface StatusBadgeProps {
   lastUpdated?: string;
 }
 
+export interface StatusBadge {
+  type: 'updated' | 'awaiting' | 'pending';
+  timestamp?: string;
+  message?: string;
+}
+
 // Store Types
 export interface ModerationState {
   items: ModerationResponse[];
@@ -173,4 +187,9 @@ export interface ModerationState {
   setError: (key: keyof ErrorState, value?: string) => void;
   fetchItems: () => Promise<void>;
   submitFeedback: (feedback: Omit<FeedbackResponse, 'id' | 'timestamp'>) => Promise<void>;
+  fetchAnalytics: (id: string) => Promise<AnalyticsResponse>;
+  fetchNLPContext: (id: string) => Promise<NLPResponse>;
+  fetchTags: (id: string) => Promise<TagResponse>;
+  updateItemStatus: (id: string, statusBadge: StatusBadge, rewardStatus?: 'awaiting' | 'received') => void;
+  simulateRLUpdate: (id: string) => void;
 }

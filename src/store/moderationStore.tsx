@@ -4,6 +4,9 @@ import {
   ModerationState,
   ModerationResponse,
   FeedbackResponse,
+  AnalyticsResponse,
+  NLPResponse,
+  TagResponse,
   FilterState,
   PaginationState,
   LoadingState,
@@ -157,7 +160,7 @@ export const useModerationStore = create<ModerationState>()(
             );
           }
           
-          return response;
+          return;
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : 'Failed to submit feedback';
           get().setError('feedback', errorMessage);
@@ -165,6 +168,195 @@ export const useModerationStore = create<ModerationState>()(
           throw error;
         } finally {
           get().setLoading('feedback', false);
+        }
+      },
+
+      fetchAnalytics: async (id: string) => {
+        try {
+          get().setLoading('analytics', true);
+          get().setError('analytics');
+
+          const analyticsData = await apiService.getAnalytics(id);
+          
+          // Update the selected item with analytics data
+          const { selectedItem } = get();
+          if (selectedItem && selectedItem.id === id) {
+            set(
+              {
+                selectedItem: {
+                  ...selectedItem,
+                  analytics: analyticsData,
+                },
+              },
+              false,
+              'fetchAnalytics'
+            );
+          }
+          
+          // Also update in the items list
+          set(
+            {
+              items: get().items.map(item =>
+                item.id === id ? { ...item, analytics: analyticsData } : item
+              ),
+            },
+            false,
+            'fetchAnalytics'
+          );
+          
+          return analyticsData;
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to fetch analytics';
+          get().setError('analytics', errorMessage);
+          console.error('Error fetching analytics:', error);
+          throw error;
+        } finally {
+          get().setLoading('analytics', false);
+        }
+      },
+
+      fetchNLPContext: async (id: string) => {
+        try {
+          get().setLoading('nlp', true);
+          get().setError('nlp');
+
+          const nlpData = await apiService.getNLPContext(id);
+          
+          // Update the selected item with NLP data
+          const { selectedItem } = get();
+          if (selectedItem && selectedItem.id === id) {
+            set(
+              {
+                selectedItem: {
+                  ...selectedItem,
+                  nlpContext: nlpData,
+                },
+              },
+              false,
+              'fetchNLPContext'
+            );
+          }
+          
+          // Also update in the items list
+          set(
+            {
+              items: get().items.map(item =>
+                item.id === id ? { ...item, nlpContext: nlpData } : item
+              ),
+            },
+            false,
+            'fetchNLPContext'
+          );
+          
+          return nlpData;
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to fetch NLP context';
+          get().setError('nlp', errorMessage);
+          console.error('Error fetching NLP context:', error);
+          throw error;
+        } finally {
+          get().setLoading('nlp', false);
+        }
+      },
+
+      fetchTags: async (id: string) => {
+        try {
+          get().setLoading('tags', true);
+          get().setError('tags');
+
+          const tagsData = await apiService.getTags(id);
+          
+          // Update the selected item with tags data
+          const { selectedItem } = get();
+          if (selectedItem && selectedItem.id === id) {
+            set(
+              {
+                selectedItem: {
+                  ...selectedItem,
+                  tags: tagsData,
+                },
+              },
+              false,
+              'fetchTags'
+            );
+          }
+          
+          // Also update in the items list
+          set(
+            {
+              items: get().items.map(item =>
+                item.id === id ? { ...item, tags: tagsData } : item
+              ),
+            },
+            false,
+            'fetchTags'
+          );
+          
+          return tagsData;
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to fetch tags';
+          get().setError('tags', errorMessage);
+          console.error('Error fetching tags:', error);
+          throw error;
+        } finally {
+          get().setLoading('tags', false);
+        }
+      },
+
+      updateItemStatus: (id: string, statusBadge: any, rewardStatus?: 'awaiting' | 'received') => {
+        set(
+          {
+            items: get().items.map(item =>
+              item.id === id
+                ? {
+                    ...item,
+                    statusBadge,
+                    lastUpdated: new Date().toISOString(),
+                    rewardStatus
+                  }
+                : item
+            ),
+            selectedItem: get().selectedItem?.id === id
+              ? {
+                  ...get().selectedItem!,
+                  statusBadge,
+                  lastUpdated: new Date().toISOString(),
+                  rewardStatus
+                }
+              : get().selectedItem,
+          },
+          false,
+          'updateItemStatus'
+        );
+      },
+
+      // Simulate RL confidence updates (for demonstration)
+      simulateRLUpdate: (id: string) => {
+        const currentItem = get().items.find(item => item.id === id);
+        if (currentItem) {
+          // Simulate confidence change
+          const confidenceChange = (Math.random() - 0.5) * 0.1; // ±5% change
+          const newConfidence = Math.max(0, Math.min(1, currentItem.confidence + confidenceChange));
+          
+          const updatedItem = {
+            ...currentItem,
+            confidence: newConfidence,
+            lastUpdated: new Date().toISOString(),
+            statusBadge: {
+              type: 'updated' as const,
+              timestamp: new Date().toISOString(),
+              message: 'RL confidence updated',
+            },
+          };
+
+          set(
+            {
+              items: get().items.map(item => item.id === id ? updatedItem : item),
+              selectedItem: get().selectedItem?.id === id ? updatedItem : get().selectedItem,
+            },
+            false,
+            'simulateRLUpdate'
+          );
         }
       },
     }),
