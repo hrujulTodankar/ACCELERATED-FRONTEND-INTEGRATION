@@ -4,6 +4,7 @@ import { ModerationProvider } from './store/moderationStore'
 import ColorBends from './ColorBends'
 // @ts-ignore
 import DarkVeil from './components/DarkVeil'
+import FloatingLines from './components/FloatingLines'
 import './App.css'
 
 function App() {
@@ -92,7 +93,27 @@ function App() {
           />
         </div>
         
-        {/* ColorBends Background - Warm gradient colors (ABOVE DARKVEIL) */}
+        {/* FloatingLines - Interactive animated lines (BETWEEN DARKVEIL AND COLORBENDS) */}
+        <div className="fixed inset-0" style={{ zIndex: -18 }}>
+          <FloatingLines
+            linesGradient={["#3b82f6", "#8b5cf6", "#06b6d4", "#10b981"]}
+            enabledWaves={['top', 'middle', 'bottom']}
+            lineCount={[8, 12, 6]}
+            lineDistance={[8, 12, 10]}
+            topWavePosition={{ x: 8.0, y: 0.8, rotate: -0.3 }}
+            middleWavePosition={{ x: 4.0, y: 0.0, rotate: 0.1 }}
+            bottomWavePosition={{ x: 2.0, y: -0.8, rotate: 0.2 }}
+            animationSpeed={0.8}
+            interactive={true}
+            bendRadius={8.0}
+            bendStrength={-0.3}
+            parallax={true}
+            parallaxStrength={0.15}
+            mixBlendMode="screen"
+          />
+        </div>
+        
+        {/* ColorBends Background - Warm gradient colors (ABOVE FLOATINGLINES) */}
         <ColorBends
           colors={["#ff6b35", "#f7931e", "#ffd23f"]}
           rotation={45}
