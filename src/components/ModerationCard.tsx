@@ -1,213 +1,152 @@
-import React, { useState } from 'react';
-import { ModerationCardProps } from '../types';
-import { useModerationStore } from '../store/moderationStore';
-import { ThumbsUp, ThumbsDown, Clock, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
-import ConfidenceProgressBar from './ConfidenceProgressBar';
-import FeedbackBar from './FeedbackBar';
-import StatusBadge from './StatusBadge';
+import { useState } from 'react'
+import { ModerationCardProps } from '../types'
+import { useModerationStore } from '../store/moderationStore'
+import {
+  Clock,
+  AlertTriangle,
+  CheckCircle,
+  XCircle
+} from 'lucide-react'
+import ConfidenceProgressBar from './ConfidenceProgressBar'
+import FeedbackBar from './FeedbackBar'
+import StatusBadge from './StatusBadge'
 
-const ModerationCard: React.FC<ModerationCardProps & { onClick?: () => void }> = ({
+const ModerationCard = ({
   content,
   onFeedback,
   loading = false,
-  onClick,
-}) => {
-  const { loading: storeLoading, items } = useModerationStore();
-  const [isHovered, setIsHovered] = useState(false);
-  const [isTouched, setIsTouched] = useState(false);
-  
-  // Check if this item was recently updated (within last 3 seconds)
-  const isRecentlyUpdated = content.lastUpdated ?
-    (Date.now() - new Date(content.lastUpdated).getTime()) < 3000 : false;
+  onClick
+}: ModerationCardProps & { onClick?: () => void }) => {
+  const { loading: storeLoading } = useModerationStore()
+  const [isHovered, setIsHovered] = useState(false)
+  const [isTouched, setIsTouched] = useState(false)
+
+  const isRecentlyUpdated =
+    content.lastUpdated
+      ? Date.now() - new Date(content.lastUpdated).getTime() < 3000
+      : false
+
   const getDecisionIcon = () => {
     switch (content.decision) {
       case 'approved':
-        return <CheckCircle className="h-5 w-5 text-green-500" />;
+        return <CheckCircle className="h-5 w-5 text-emerald-500" />
       case 'rejected':
-        return <XCircle className="h-5 w-5 text-red-500" />;
+        return <XCircle className="h-5 w-5 text-rose-500" />
       case 'pending':
-        return <Clock className="h-5 w-5 text-yellow-500" />;
+        return <Clock className="h-5 w-5 text-amber-500" />
       default:
-        return <Clock className="h-5 w-5 text-gray-500" />;
+        return <Clock className="h-5 w-5 text-zinc-400" />
     }
-  };
+  }
 
-  const getDecisionColor = () => {
+  const getDecisionBadge = () => {
     switch (content.decision) {
       case 'approved':
-        return 'text-green-700 bg-green-100';
+        return 'bg-emerald-100 text-emerald-700'
       case 'rejected':
-        return 'text-red-700 bg-red-100';
+        return 'bg-rose-100 text-rose-700'
       case 'pending':
-        return 'text-yellow-700 bg-yellow-100';
+        return 'bg-amber-100 text-amber-700'
       default:
-        return 'text-gray-700 bg-gray-100';
+        return 'bg-zinc-100 text-zinc-700'
     }
-  };
+  }
 
-  const formatTimestamp = (timestamp: string) => {
-    return new Date(timestamp).toLocaleString();
-  };
-
-  const truncateContent = (text: string, maxLength: number = 150) => {
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength) + '...';
-  };
-
-  const handleMouseEnter = () => {
-    setIsHovered(true);
-  };
-
-  const handleMouseLeave = () => {
-    setIsHovered(false);
-    setIsTouched(false);
-  };
-
-  const handleTouchStart = () => {
-    setIsTouched(true);
-  };
-
-  const handleTouchEnd = () => {
-    // Delay hiding to allow for button interactions
-    setTimeout(() => setIsTouched(false), 3000);
-  };
-
-  const showFeedbackButtons = content.decision === 'pending' && (isHovered || isTouched);
+  const showFeedbackButtons =
+    content.decision === 'pending' && (isHovered || isTouched)
 
   if (loading) {
-    return (
-      <div className="p-6 animate-pulse">
-        <div className="flex items-start space-x-4">
-          <div className="flex-1">
-            <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-            <div className="h-4 bg-gray-200 rounded w-1/2 mb-4"></div>
-            <div className="space-y-2">
-              <div className="h-3 bg-gray-200 rounded"></div>
-              <div className="h-3 bg-gray-200 rounded w-5/6"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <div className="p-6 animate-pulse bg-white rounded-lg" />
   }
 
   return (
     <div
-      className={`p-6 transition-all duration-200 ${
-        isHovered ? 'bg-gray-50 shadow-md' : 'hover:bg-gray-50'
+      className={`p-6 rounded-lg transition ${
+        isHovered ? 'bg-slate-50 shadow-md' : 'hover:bg-slate-50'
       } ${onClick ? 'cursor-pointer' : ''}`}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => {
+        setIsHovered(false)
+        setIsTouched(false)
+      }}
+      onTouchStart={() => setIsTouched(true)}
+      onTouchEnd={() => setTimeout(() => setIsTouched(false), 3000)}
       onClick={onClick}
     >
-      <div className="flex items-start justify-between">
-        <div className="flex-1 min-w-0">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center space-x-2">
-              {getDecisionIcon()}
-              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getDecisionColor()}`}>
-                {content.decision.charAt(0).toUpperCase() + content.decision.slice(1)}
-              </span>
-              {content.flagged && (
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-orange-700 bg-orange-100">
-                  <AlertTriangle className="h-3 w-3 mr-1" />
-                  Flagged
-                </span>
-              )}
-              {content.statusBadge && (
-                <StatusBadge
-                  status={content.statusBadge.type}
-                  lastUpdated={content.statusBadge.timestamp}
-                />
-              )}
-            </div>
-            <div className="text-sm text-gray-500">
-              {formatTimestamp(content.timestamp)}
-            </div>
-          </div>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          {getDecisionIcon()}
+          <span
+            className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getDecisionBadge()}`}
+          >
+            {content.decision.toUpperCase()}
+          </span>
 
-          {/* Content */}
-          <div className="mb-4">
-            <p className="text-sm text-gray-900 leading-relaxed">
-              {truncateContent(content.content)}
-            </p>
-          </div>
+          {content.flagged && (
+            <span className="flex items-center gap-1 px-2 py-0.5 text-xs rounded-full bg-orange-100 text-orange-700">
+              <AlertTriangle className="h-3 w-3" />
+              Flagged
+            </span>
+          )}
 
-          {/* Confidence Progress */}
-          <div className="mb-4">
-            <ConfidenceProgressBar
-              confidence={content.confidence}
-              decision={content.decision}
-              updating={isRecentlyUpdated}
+          {content.statusBadge && (
+            <StatusBadge
+              status={content.statusBadge.type}
+              lastUpdated={content.statusBadge.timestamp}
             />
-          </div>
-
-          {/* Enhanced Metadata */}
-          <div className="space-y-2">
-            {/* Basic Info */}
-            <div className="flex items-center justify-between text-xs text-gray-500">
-              <div className="flex items-center space-x-4">
-                <span>Type: {content.type}</span>
-                <span>Length: {content.metadata.length} chars</span>
-                {content.metadata.language && (
-                  <span>Lang: {content.metadata.language}</span>
-                )}
-              </div>
-              <div className="text-xs text-gray-400">
-                ID: {content.id.substring(0, 8)}...
-              </div>
-            </div>
-
-            {/* NLP & Tags Preview */}
-            {(content.nlpContext || content.tags) && (
-              <div className="flex items-center justify-between text-xs">
-                {content.nlpContext && (
-                  <div className="flex items-center space-x-2">
-                    <span className="text-gray-500">Sentiment:</span>
-                    <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
-                      content.nlpContext.sentiment.label === 'positive' ? 'bg-green-100 text-green-700' :
-                      content.nlpContext.sentiment.label === 'negative' ? 'bg-red-100 text-red-700' :
-                      'bg-gray-100 text-gray-700'
-                    }`}>
-                      {content.nlpContext.sentiment.label}
-                    </span>
-                  </div>
-                )}
-                
-                {content.tags && content.tags.tags.length > 0 && (
-                  <div className="flex items-center space-x-1">
-                    <span className="text-gray-500">Tags:</span>
-                    <div className="flex space-x-1">
-                      {content.tags.tags.slice(0, 2).map((tag, index) => (
-                        <span key={index} className="px-1 py-0.5 bg-indigo-100 text-indigo-700 rounded text-xs">
-                          #{tag.label}
-                        </span>
-                      ))}
-                      {content.tags.tags.length > 2 && (
-                        <span className="text-gray-400">+{content.tags.tags.length - 2}</span>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Last Updated */}
-            {content.lastUpdated && (
-              <div className="text-xs text-gray-400">
-                Updated: {new Date(content.lastUpdated).toLocaleString()}
-              </div>
-            )}
-          </div>
+          )}
         </div>
+
+        <span className="text-xs text-zinc-400">
+          {new Date(content.timestamp).toLocaleString()}
+        </span>
       </div>
 
-      {/* Feedback Bar - show on hover/touch for pending items */}
+      {/* Content */}
+      <p className="text-sm text-zinc-900 mb-4 leading-relaxed">
+        {content.content.length > 150
+          ? content.content.slice(0, 150) + '...'
+          : content.content}
+      </p>
+
+      {/* Confidence */}
+      <ConfidenceProgressBar
+        confidence={content.confidence}
+        decision={content.decision}
+        updating={isRecentlyUpdated}
+      />
+
+      {/* Metadata */}
+      <div className="mt-3 text-xs text-zinc-500 flex justify-between">
+        <span>
+          {content.type} · {content.metadata.length} chars
+        </span>
+        <span>ID: {content.id.slice(0, 8)}...</span>
+      </div>
+
+      {/* Tags */}
+      {content.tags?.tags?.length > 0 && (
+        <div className="mt-3 flex gap-1">
+          {content.tags.tags.slice(0, 2).map((tag, i) => (
+            <span
+              key={i}
+              className="bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded text-xs"
+            >
+              #{tag.label}
+            </span>
+          ))}
+          {content.tags.tags.length > 2 && (
+            <span className="text-zinc-400 text-xs">
+              +{content.tags.tags.length - 2}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Feedback */}
       {showFeedbackButtons && (
-        <div className="mt-4 pt-4 border-t border-gray-200 animate-in slide-in-from-top-2 duration-200">
+        <div className="mt-4 pt-4 border-t border-zinc-200">
           <FeedbackBar
             onFeedback={onFeedback}
             loading={storeLoading.feedback}
@@ -215,7 +154,7 @@ const ModerationCard: React.FC<ModerationCardProps & { onClick?: () => void }> =
         </div>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default ModerationCard;
+export default ModerationCard
