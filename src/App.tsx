@@ -4,7 +4,7 @@ import { ModerationProvider } from './store/moderationStore'
 import ColorBends from './ColorBends'
 // @ts-ignore
 import DarkVeil from './components/DarkVeil'
-import FloatingLines from './components/FloatingLines'
+// import FloatingLines from './components/FloatingLines'
 import './App.css'
 
 function App() {
@@ -93,7 +93,7 @@ function App() {
           />
         </div>
         
-        {/* FloatingLines - Interactive animated lines (BETWEEN DARKVEIL AND COLORBENDS) */}
+        {/* FloatingLines - Interactive animated lines (TEMPORARILY DISABLED DUE TO HMR ISSUE)
         <div className="fixed inset-0" style={{ zIndex: -18 }}>
           <FloatingLines
             linesGradient={["#3b82f6", "#8b5cf6", "#06b6d4", "#10b981"]}
@@ -112,6 +112,7 @@ function App() {
             mixBlendMode="screen"
           />
         </div>
+        */}
         
         {/* ColorBends Background - Warm gradient colors (ABOVE FLOATINGLINES) */}
         <ColorBends
@@ -153,3 +154,4 @@ function App() {
 }
 
 export default App
+
