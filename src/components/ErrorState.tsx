@@ -13,7 +13,7 @@ const ErrorState: React.FC<ErrorStateProps> = ({
   className = '',
 }) => {
   return (
-    <div className={`bg-red-50 border border-red-200 rounded-lg p-6 ${className}`}>
+    <div className={`bg-red-50/20 border border-red-200 rounded-lg p-6 backdrop-blur-sm ${className}`}>
       <div className="flex items-center">
         <div className="flex-shrink-0">
           <AlertTriangle className="h-6 w-6 text-red-400" />

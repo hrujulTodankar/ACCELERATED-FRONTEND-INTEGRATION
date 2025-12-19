@@ -126,7 +126,7 @@ const Dashboard: React.FC = () => {
     <div className="min-h-screen relative">
       
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200 relative z-10">
+      <header className="bg-white/10 backdrop-blur-sm shadow-sm border-b border-gray-200/50 relative z-10" >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
@@ -189,10 +189,10 @@ const Dashboard: React.FC = () => {
         )}
 
         {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 bg-transparent">
           {/* Content List */}
           <div className="lg:col-span-2">
-            <div className="bg-white shadow rounded-lg">
+            <div className="bg-white/10 backdrop-blur-sm shadow rounded-lg">
               <div className="px-6 py-4 border-b border-gray-200">
                 <h2 className="text-lg font-medium text-gray-900">
                   Content Queue
@@ -204,7 +204,7 @@ const Dashboard: React.FC = () => {
                 </h2>
               </div>
               
-              <div className="divide-y divide-gray-200">
+              <div className="divide-y divide-gray-200 bg-transparent">
                 {loading.moderation ? (
                   <LoadingSkeleton count={5} />
                 ) : items.length > 0 ? (
@@ -226,7 +226,7 @@ const Dashboard: React.FC = () => {
 
               {/* Pagination */}
               {pagination.totalPages > 1 && (
-                <div className="px-6 py-4 border-t border-gray-200">
+                <div className="px-6 py-4 border-t border-gray-200 bg-transparent">
                   <Pagination
                     currentPage={pagination.currentPage}
                     totalPages={pagination.totalPages}
@@ -238,11 +238,11 @@ const Dashboard: React.FC = () => {
           </div>
 
           {/* Sidebar */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 bg-transparent">
             {selectedItem ? (
               <div className="space-y-6">
                 {/* Basic Item Info */}
-                <div className="bg-white shadow rounded-lg p-6">
+                <div className="bg-white/10 backdrop-blur-sm shadow rounded-lg p-6">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-medium text-gray-900">
                       Content Details
@@ -255,24 +255,24 @@ const Dashboard: React.FC = () => {
                     )}
                   </div>
                   
-                  <div className="space-y-3">
+                  <div className="space-y-3 bg-transparent">
                     <div>
                       <p className="text-xs text-gray-500">Content ID</p>
                       <p className="text-sm font-mono">{selectedItem.id}</p>
                     </div>
                     
-                    <div className="flex justify-between">
+                    <div className="flex justify-between bg-inherit">
                       <div>
                         <p className="text-xs text-gray-500">Status</p>
                         <p className="text-sm font-medium capitalize">{selectedItem.decision}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500">Confidence</p>
+                        <p className="text-xs text-gray-500 bg-inherit">Confidence</p>
                         <p className="text-sm font-medium">{(selectedItem.confidence * 100).toFixed(1)}%</p>
                       </div>
                     </div>
                     
-                    <div className="flex justify-between">
+                    <div className="flex justify-between bg-inherit">
                       <div>
                         <p className="text-xs text-gray-500">Type</p>
                         <p className="text-sm font-medium capitalize">{selectedItem.type}</p>
@@ -317,7 +317,7 @@ const Dashboard: React.FC = () => {
                 )}
               </div>
             ) : (
-              <div className="bg-white shadow rounded-lg p-6">
+              <div className="bg-white/10 backdrop-blur-sm shadow rounded-lg p-6">
                 <div className="text-center text-gray-500">
                   <Filter className="mx-auto h-12 w-12 text-gray-400" />
                   <h3 className="mt-2 text-sm font-medium text-gray-900">

@@ -23,7 +23,7 @@ const ConfidenceProgressBar: React.FC<ConfidenceProgressProps> = ({
   };
 
   return (
-    <div className="w-full">
+    <div className="w-full bg-transparent">
       <div className="flex items-center justify-between mb-2">
         <span className="text-sm font-medium text-gray-700">
           Confidence Score
@@ -45,7 +45,7 @@ const ConfidenceProgressBar: React.FC<ConfidenceProgressProps> = ({
         </div>
       </div>
       
-      <div className="relative">
+      <div className="relative bg-transparent">
         <div className="w-full bg-gray-200 rounded-full h-2">
           <div
             className={`h-2 rounded-full transition-all duration-500 ease-out ${
@@ -66,7 +66,7 @@ const ConfidenceProgressBar: React.FC<ConfidenceProgressProps> = ({
       </div>
       
       {/* Confidence thresholds */}
-      <div className="flex justify-between text-xs text-gray-500 mt-1">
+      <div className="flex justify-between text-xs text-gray-500 mt-1 bg-transparent">
         <span>Low (0%)</span>
         <span>Medium (60%)</span>
         <span>High (80%)</span>

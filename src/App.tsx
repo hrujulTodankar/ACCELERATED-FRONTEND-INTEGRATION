@@ -12,12 +12,12 @@ function App() {
         {/* DarkVeil background */}
         <div className="fixed inset-0 pointer-events-none -z-10">
           <DarkVeil
-            hueShift={200}
-            noiseIntensity={0.05}
-            scanlineIntensity={0.01}
-            speed={0.15}
+            hueShift={36}
+            noiseIntensity={0}
+            scanlineIntensity={0}
+            speed={3}
             scanlineFrequency={1}
-            warpAmount={0.03}
+            warpAmount={1}
             resolutionScale={1}
           />
         </div>

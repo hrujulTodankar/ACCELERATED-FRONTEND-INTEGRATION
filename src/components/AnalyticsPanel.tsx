@@ -10,7 +10,7 @@ interface AnalyticsPanelProps {
 const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ analytics, loading = false }) => {
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white/10 backdrop-blur-sm rounded-lg shadow p-6">
         <h3 className="text-lg font-medium text-gray-900 mb-4">Analytics</h3>
         <div className="animate-pulse space-y-3">
           <div className="h-4 bg-gray-200 rounded w-3/4"></div>
@@ -25,7 +25,7 @@ const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ analytics, loading = fa
   const formatNumber = (value: number) => value.toLocaleString();
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+    <div className="bg-white/10 backdrop-blur-sm rounded-lg shadow p-6">
       <div className="flex items-center mb-4">
         <BarChart3 className="h-5 w-5 text-blue-500 mr-2" />
         <h3 className="text-lg font-medium text-gray-900">Analytics</h3>
@@ -33,7 +33,7 @@ const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ analytics, loading = fa
       
       {/* Key Metrics */}
       <div className="grid grid-cols-2 gap-4 mb-6">
-        <div className="bg-blue-50 p-3 rounded-lg">
+        <div className="bg-blue-50/30 p-3 rounded-lg">
           <div className="flex items-center">
             <Target className="h-4 w-4 text-blue-500 mr-2" />
             <span className="text-sm font-medium text-blue-700">CTR</span>
@@ -41,7 +41,7 @@ const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ analytics, loading = fa
           <p className="text-2xl font-bold text-blue-900">{formatPercentage(analytics.ctr)}</p>
         </div>
         
-        <div className="bg-green-50 p-3 rounded-lg">
+        <div className="bg-green-50/30 p-3 rounded-lg">
           <div className="flex items-center">
             <Users className="h-4 w-4 text-green-500 mr-2" />
             <span className="text-sm font-medium text-green-700">Interactions</span>

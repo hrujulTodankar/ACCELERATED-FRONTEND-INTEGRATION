@@ -10,12 +10,12 @@ interface TagsPanelProps {
 const TagsPanel: React.FC<TagsPanelProps> = ({ tagsData, loading = false }) => {
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white/10 backdrop-blur-sm rounded-lg shadow p-6">
         <h3 className="text-lg font-medium text-gray-900 mb-4">Tags</h3>
         <div className="animate-pulse space-y-3">
-          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-          <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+          <div className="h-4 bg-gray-200/50 rounded w-3/4"></div>
+          <div className="h-4 bg-gray-200/50 rounded w-1/2"></div>
+          <div className="h-4 bg-gray-200/50 rounded w-2/3"></div>
         </div>
       </div>
     );
@@ -23,13 +23,13 @@ const TagsPanel: React.FC<TagsPanelProps> = ({ tagsData, loading = false }) => {
 
   const getCategoryColor = (category: string) => {
     const colors = {
-      topic: 'bg-blue-100 text-blue-800',
-      engagement: 'bg-green-100 text-green-800',
-      quality: 'bg-purple-100 text-purple-800',
-      safety: 'bg-red-100 text-red-800',
-      trending: 'bg-yellow-100 text-yellow-800',
+      topic: 'bg-blue-100/50 text-blue-800',
+      engagement: 'bg-green-100/50 text-green-800',
+      quality: 'bg-purple-100/50 text-purple-800',
+      safety: 'bg-red-100/50 text-red-800',
+      trending: 'bg-yellow-100/50 text-yellow-800',
     };
-    return colors[category as keyof typeof colors] || 'bg-gray-100 text-gray-800';
+    return colors[category as keyof typeof colors] || 'bg-gray-100/50 text-gray-800';
   };
 
   const formatTimestamp = (timestamp: string) => {
@@ -37,7 +37,7 @@ const TagsPanel: React.FC<TagsPanelProps> = ({ tagsData, loading = false }) => {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+    <div className="bg-white/10 backdrop-blur-sm rounded-lg shadow p-6">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center">
           <Tag className="h-5 w-5 text-indigo-500 mr-2" />
@@ -52,7 +52,7 @@ const TagsPanel: React.FC<TagsPanelProps> = ({ tagsData, loading = false }) => {
       {/* Tags Grid */}
       <div className="grid grid-cols-1 gap-3 mb-6">
         {tagsData.tags.map((tag, index) => (
-          <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+          <div key={index} className="flex items-center justify-between p-3 bg-gray-50/30 rounded-lg">
             <div className="flex items-center space-x-3">
               <span className="text-sm font-medium text-gray-900">#{tag.label}</span>
               <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${getCategoryColor(tag.category)}`}>
@@ -60,7 +60,7 @@ const TagsPanel: React.FC<TagsPanelProps> = ({ tagsData, loading = false }) => {
               </span>
             </div>
             <div className="flex items-center space-x-2">
-              <div className="w-16 bg-gray-200 rounded-full h-2">
+              <div className="w-16 bg-gray-200/50 rounded-full h-2">
                 <div 
                   className="bg-indigo-500 h-2 rounded-full transition-all duration-300" 
                   style={{ width: `${tag.confidence * 100}%` }}

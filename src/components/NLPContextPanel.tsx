@@ -10,12 +10,12 @@ interface NLPContextPanelProps {
 const NLPContextPanel: React.FC<NLPContextPanelProps> = ({ nlpData, loading = false }) => {
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white/10 backdrop-blur-sm rounded-lg shadow p-6">
         <h3 className="text-lg font-medium text-gray-900 mb-4">NLP Analysis</h3>
         <div className="animate-pulse space-y-3">
-          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-          <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+          <div className="h-4 bg-gray-200/50 rounded w-3/4"></div>
+          <div className="h-4 bg-gray-200/50 rounded w-1/2"></div>
+          <div className="h-4 bg-gray-200/50 rounded w-2/3"></div>
         </div>
       </div>
     );
@@ -24,11 +24,11 @@ const NLPContextPanel: React.FC<NLPContextPanelProps> = ({ nlpData, loading = fa
   const getSentimentColor = (label: string) => {
     switch (label) {
       case 'positive':
-        return 'text-green-600 bg-green-100';
+        return 'text-green-600 bg-green-100/50';
       case 'negative':
-        return 'text-red-600 bg-red-100';
+        return 'text-red-600 bg-red-100/50';
       default:
-        return 'text-gray-600 bg-gray-100';
+        return 'text-gray-600 bg-gray-100/50';
     }
   };
 
@@ -44,7 +44,7 @@ const NLPContextPanel: React.FC<NLPContextPanelProps> = ({ nlpData, loading = fa
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+    <div className="bg-white/10 backdrop-blur-sm rounded-lg shadow p-6">
       <div className="flex items-center mb-4">
         <Brain className="h-5 w-5 text-purple-500 mr-2" />
         <h3 className="text-lg font-medium text-gray-900">NLP Analysis</h3>
@@ -83,7 +83,7 @@ const NLPContextPanel: React.FC<NLPContextPanelProps> = ({ nlpData, loading = fa
                 <span className="ml-2 text-xs text-gray-500">({topic.category})</span>
               </div>
               <div className="flex items-center">
-                <div className="w-16 bg-gray-200 rounded-full h-2 mr-2">
+                <div className="w-16 bg-gray-200/50 rounded-full h-2 mr-2">
                   <div 
                     className="bg-blue-500 h-2 rounded-full" 
                     style={{ width: `${topic.confidence * 100}%` }}
@@ -112,7 +112,7 @@ const NLPContextPanel: React.FC<NLPContextPanelProps> = ({ nlpData, loading = fa
                 <span className="ml-2 text-xs text-gray-500">({entity.type})</span>
               </div>
               <div className="flex items-center">
-                <div className="w-12 bg-gray-200 rounded-full h-2 mr-2">
+                <div className="w-12 bg-gray-200/50 rounded-full h-2 mr-2">
                   <div 
                     className="bg-green-500 h-2 rounded-full" 
                     style={{ width: `${entity.confidence * 100}%` }}

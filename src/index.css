@@ -14,3 +14,47 @@ body {
   background: transparent;
   overflow-x: hidden;
 }
+
+.opacity-0 {
+  opacity: 0;
+}
+
+/* Global transparent divs */
+div {
+  background-color: transparent !important;
+  border: none !important;
+}
+
+/* Override specific background colors for better visibility */
+.bg-white {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(10px);
+}
+
+.bg-gray-50 {
+  background-color: rgba(249, 250, 251, 0.1) !important;
+}
+
+.bg-blue-50 {
+  background-color: rgba(239, 246, 255, 0.1) !important;
+}
+
+.bg-green-50 {
+  background-color: rgba(240, 253, 244, 0.1) !important;
+}
+
+.bg-red-50 {
+  background-color: rgba(254, 242, 242, 0.1) !important;
+}
+
+.bg-yellow-50 {
+  background-color: rgba(255, 251, 235, 0.1) !important;
+}
+
+.bg-purple-50 {
+  background-color: rgba(250, 245, 255, 0.1) !important;
+}
+
+.bg-indigo-50 {
+  background-color: rgba(238, 242, 255, 0.1) !important;
+}
