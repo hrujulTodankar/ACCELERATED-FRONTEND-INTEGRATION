@@ -203,14 +203,23 @@ export const getModerationItem = async (id: string) => {
 
 export const submitFeedback = async (feedback: Omit<FeedbackResponse, 'id' | 'timestamp'>) => {
   try {
+    // Transform frontend feedback format to backend format
+    // Backend expects: { moderationId: string, feedback: string, userId: string }
+    // Frontend sends: { thumbsUp: boolean, comment?: string, userId: string, itemId?: string }
+    const backendFeedback = {
+      moderationId: 'general_feedback',
+      feedback: feedback.comment || (feedback.thumbsUp ? 'Positive feedback' : 'Negative feedback'),
+      userId: feedback.userId,
+    };
+    
     const response: AxiosResponse<{
       success: boolean;
       confidence: number;
       timestamp: string;
       feedbackId?: string;
-    }> = await api.post('/feedback', feedback);
+    }> = await api.post('/feedback', backendFeedback);
     
-    // Return the actual response from backend
+    // Return the actual response from backend in frontend format
     return {
       id: response.data.feedbackId || `feedback_${Date.now()}`,
       thumbsUp: feedback.thumbsUp,
@@ -248,72 +257,132 @@ export const getAnalytics = async (id: string) => {
 
 export const getNLPContext = async (id: string) => {
   try {
-    // Try BHIV knowledge base endpoint for NLP context
+    // Try dedicated NLP context endpoint first
     const response: AxiosResponse<{
-      response: string;
-      sources: any[];
-      query_id: string;
-    }> = await api.post('/query-kb', {
-      query: `Analyze content with ID ${id} for NLP context`,
-      limit: 3,
-      user_id: 'frontend_user'
+      status: string;
+      analysis: any;
+      timestamp: string;
+    }> = await api.get('/nlp/context', {
+      params: {
+        text: `Content for analysis with ID ${id}`,
+        analysis_type: 'full'
+      }
     });
     
-    // Transform BHIV response to NLP format
+    // Transform BHIV NLP response to frontend format
     return {
       id,
       topics: [
         { name: 'Content Analysis', confidence: 0.85, category: 'analysis' },
         { name: 'Text Processing', confidence: 0.75, category: 'nlp' }
       ],
-      sentiment: { label: 'neutral' as const, score: 0.5, confidence: 0.7 },
-      entities: [
+      sentiment: response.data.analysis?.sentiment || { label: 'neutral' as const, score: 0.5, confidence: 0.7 },
+      entities: response.data.analysis?.entities || [
         { text: 'content', type: 'misc' as const, confidence: 0.9 },
         { text: 'analysis', type: 'misc' as const, confidence: 0.8 }
       ],
-      context: response.data.response || 'NLP analysis of content',
+      context: response.data.analysis?.summary || 'NLP analysis of content',
     };
   } catch (error) {
     console.error('Error fetching NLP context from BHIV backend:', error);
-    // Return mock NLP context in development mode
-    if (import.meta.env.DEV) {
-      return generateMockNLPContext(id, `Content for analysis ${id}`);
+    // Fallback to knowledge base endpoint
+    try {
+      const kbResponse: AxiosResponse<{
+        response: string;
+        sources: any[];
+        query_id: string;
+      }> = await api.post('/query-kb', {
+        query: `Analyze content with ID ${id} for NLP context`,
+        limit: 3,
+        user_id: 'frontend_user'
+      });
+      
+      return {
+        id,
+        topics: [
+          { name: 'Content Analysis', confidence: 0.85, category: 'analysis' },
+          { name: 'Text Processing', confidence: 0.75, category: 'nlp' }
+        ],
+        sentiment: { label: 'neutral' as const, score: 0.5, confidence: 0.7 },
+        entities: [
+          { text: 'content', type: 'misc' as const, confidence: 0.9 },
+          { text: 'analysis', type: 'misc' as const, confidence: 0.8 }
+        ],
+        context: kbResponse.data.response || 'NLP analysis of content',
+      };
+    } catch (kbError) {
+      console.error('Error fetching NLP context from knowledge base:', kbError);
+      // Return mock NLP context in development mode
+      if (import.meta.env.DEV) {
+        return generateMockNLPContext(id, `Content for analysis ${id}`);
+      }
+      throw error;
     }
-    throw error;
   }
 };
 
 export const getTags = async (id: string) => {
   try {
-    // Try BHIV knowledge base for tag generation
+    // Try dedicated tag endpoint first
     const response: AxiosResponse<{
-      response: string;
-      sources: any[];
-      query_id: string;
-    }> = await api.post('/query-kb', {
-      query: `Generate tags for content with ID ${id}`,
-      limit: 2,
-      user_id: 'frontend_user'
+      status: string;
+      tags: any[];
+      total_tags: number;
+      timestamp: string;
+    }> = await api.get('/tag', {
+      params: {
+        content: `Content for tagging with ID ${id}`,
+        max_tags: 5
+      }
     });
     
-    // Transform BHIV response to tags format
+    // Transform BHIV tags response to frontend format
     return {
       id,
-      tags: [
+      tags: response.data.tags?.map((tag: any) => ({
+        label: tag.tag,
+        confidence: tag.score,
+        category: tag.category
+      })) || [
         { label: 'content', confidence: 0.9, category: 'general' },
         { label: 'analyzed', confidence: 0.8, category: 'processing' }
       ],
       confidence: 0.85,
-      model: 'bhiv-knowledge-agent',
-      timestamp: new Date().toISOString(),
+      model: 'bhiv-tag-generator',
+      timestamp: response.data.timestamp,
     };
   } catch (error) {
     console.error('Error fetching tags from BHIV backend:', error);
-    // Return mock tags in development mode
-    if (import.meta.env.DEV) {
-      return generateMockTags(id, 0);
+    // Fallback to knowledge base endpoint
+    try {
+      const kbResponse: AxiosResponse<{
+        response: string;
+        sources: any[];
+        query_id: string;
+      }> = await api.post('/query-kb', {
+        query: `Generate tags for content with ID ${id}`,
+        limit: 2,
+        user_id: 'frontend_user'
+      });
+      
+      return {
+        id,
+        tags: [
+          { label: 'content', confidence: 0.9, category: 'general' },
+          { label: 'analyzed', confidence: 0.8, category: 'processing' }
+        ],
+        confidence: 0.85,
+        model: 'bhiv-knowledge-agent',
+        timestamp: new Date().toISOString(),
+      };
+    } catch (kbError) {
+      console.error('Error fetching tags from knowledge base:', kbError);
+      // Return mock tags in development mode
+      if (import.meta.env.DEV) {
+        return generateMockTags(id, 0);
+      }
+      throw error;
     }
-    throw error;
   }
 };
 
