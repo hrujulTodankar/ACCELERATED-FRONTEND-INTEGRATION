@@ -1,0 +1,444 @@
+import axios, { AxiosResponse } from 'axios';
+import {
+  ModerationResponse,
+  FeedbackResponse,
+  AnalyticsResponse,
+  NLPResponse,
+  TagResponse,
+  FilterState,
+} from '../types';
+
+// Backend configuration
+interface BackendConfig {
+  name: 'bhiv' | 'insightbridge';
+  baseURL: string;
+  timeout: number;
+  priority: number; // Lower number = higher priority
+  enabled: boolean;
+}
+
+// Backend instances
+const backends: BackendConfig[] = [
+  {
+    name: 'bhiv',
+    baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8001',
+    timeout: 10000,
+    priority: 1,
+    enabled: import.meta.env.VITE_USE_BHIV_BACKEND !== 'false',
+  },
+  {
+    name: 'insightbridge',
+    baseURL: import.meta.env.VITE_INSIGHTBRIDGE_API_URL || 'http://localhost:8002',
+    timeout: 5000,
+    priority: 2,
+    enabled: import.meta.env.VITE_USE_INSIGHTBRIDGE_BACKEND !== 'false',
+  },
+];
+
+// Create axios instances for each backend
+const createBackendClient = (config: BackendConfig) => {
+  const client = axios.create({
+    baseURL: config.baseURL,
+    timeout: config.timeout,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  // Request interceptor
+  client.interceptors.request.use(
+    (config) => {
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      return config;
+    },
+    (error) => Promise.reject(error)
+  );
+
+  // Response interceptor
+  client.interceptors.response.use(
+    (response) => response,
+    (error) => {
+      if (error.response?.status === 401) {
+        localStorage.removeItem('authToken');
+        window.location.href = '/login';
+      }
+      return Promise.reject(error);
+    }
+  );
+
+  return client;
+};
+
+// Create clients for all enabled backends
+const backendClients = backends
+  .filter(backend => backend.enabled)
+  .map(backend => ({
+    ...backend,
+    client: createBackendClient(backend),
+  }));
+
+// Health check service for both backends
+export interface BackendHealth {
+  name: string;
+  status: 'healthy' | 'degraded' | 'unhealthy';
+  responseTime: number;
+  lastCheck: string;
+  features: string[];
+}
+
+class UnifiedAPIService {
+  private healthCache = new Map<string, { data: BackendHealth; timestamp: number }>();
+  private cacheTimeout = 30000; // 30 seconds
+
+  /**
+   * Check health of all backends
+   */
+  async checkBackendHealth(): Promise<BackendHealth[]> {
+    const healthPromises = backendClients.map(async (backend) => {
+      const startTime = Date.now();
+      
+      try {
+        const response = await backend.client.get('/health');
+        const responseTime = Date.now() - startTime;
+        
+        return {
+          name: backend.name,
+          status: 'healthy' as const,
+          responseTime,
+          lastCheck: new Date().toISOString(),
+          features: ['moderation', 'analytics', 'nlp', 'tags'], // Default features
+        };
+      } catch (error) {
+        const responseTime = Date.now() - startTime;
+        return {
+          name: backend.name,
+          status: 'unhealthy' as const,
+          responseTime,
+          lastCheck: new Date().toISOString(),
+          features: [],
+        };
+      }
+    });
+
+    const results = await Promise.allSettled(healthPromises);
+    
+    return results.map((result, index) => {
+      if (result.status === 'fulfilled') {
+        return result.value;
+      } else {
+        return {
+          name: backendClients[index].name,
+          status: 'degraded' as const,
+          responseTime: 0,
+          lastCheck: new Date().toISOString(),
+          features: [],
+        };
+      }
+    });
+  }
+
+  /**
+   * Get the best available backend for a request
+   */
+  private getBestBackend<T>(operation: (backend: typeof backendClients[0]) => Promise<T>): Promise<T> {
+    // Sort by priority (lower number = higher priority)
+    const sortedBackends = [...backendClients].sort((a, b) => a.priority - b.priority);
+    
+    const attemptRequest = async (backends: typeof sortedBackends): Promise<T> => {
+      if (backends.length === 0) {
+        throw new Error('No backends available');
+      }
+
+      const [currentBackend, ...remainingBackends] = backends;
+      
+      try {
+        return await operation(currentBackend);
+      } catch (error) {
+        console.warn(`Backend ${currentBackend.name} failed:`, error);
+        
+        if (remainingBackends.length === 0) {
+          throw new Error('All backends failed');
+        }
+        
+        return attemptRequest(remainingBackends);
+      }
+    };
+
+    return attemptRequest(sortedBackends);
+  }
+
+  /**
+   * Get moderation items with fallback between backends
+   */
+  async getModerationItems(params: FilterState & { page: number; limit: number }) {
+    return this.getBestBackend(async (backend) => {
+      if (backend.name === 'bhiv') {
+        const response: AxiosResponse<{
+          data: ModerationResponse[];
+          total: number;
+          page: number;
+          limit: number;
+        }> = await backend.client.get('/moderate', { params });
+        
+        return response.data;
+      } else if (backend.name === 'insightbridge') {
+        // Generate mock data from InsightBridge audit trail
+        const mockData = this.generateMockFromInsightBridge(params);
+        return mockData;
+      }
+      
+      throw new Error(`Unknown backend: ${backend.name}`);
+    });
+  }
+
+  /**
+   * Submit feedback with security verification
+   */
+  async submitFeedback(feedback: Omit<FeedbackResponse, 'id' | 'timestamp'>) {
+    return this.getBestBackend(async (backend) => {
+      if (backend.name === 'bhiv') {
+        const response = await backend.client.post('/feedback', feedback);
+        return {
+          id: response.data.feedbackId || `feedback_${Date.now()}`,
+          ...feedback,
+          timestamp: response.data.timestamp,
+        };
+      } else if (backend.name === 'insightbridge') {
+        // Create JWT token for secure feedback
+        const jwtResponse = await backend.client.post('/auth/jwt/create', {
+          payload: { feedback, userId: feedback.userId },
+          exp_seconds: 3600,
+        });
+
+        // Append to hash chain for audit trail
+        await backend.client.post('/audit/hashchain/append', {
+          data: {
+            type: 'feedback',
+            feedbackId: `fb_${Date.now()}`,
+            ...feedback,
+            jwt: jwtResponse.data.token,
+          },
+        });
+
+        return {
+          id: `fb_${Date.now()}`,
+          ...feedback,
+          timestamp: new Date().toISOString(),
+        };
+      }
+      
+      throw new Error(`Unknown backend: ${backend.name}`);
+    });
+  }
+
+  /**
+   * Get analytics with security verification
+   */
+  async getAnalytics(id: string): Promise<AnalyticsResponse> {
+    return this.getBestBackend(async (backend) => {
+      if (backend.name === 'bhiv') {
+        const response = await backend.client.get('/kb-analytics', { params: { hours: 24 } });
+        return this.transformBHIVAnalytics(response.data.analytics, id);
+      } else if (backend.name === 'insightbridge') {
+        // Get audit trail for analytics
+        const auditResponse = await backend.client.get('/audit/status');
+        const chainResponse = await backend.client.get('/audit/hashchain');
+        
+        return this.generateInsightBridgeAnalytics(id, auditResponse.data, chainResponse.data);
+      }
+      
+      throw new Error(`Unknown backend: ${backend.name}`);
+    });
+  }
+
+  /**
+   * Get NLP context with security verification
+   */
+  async getNLPContext(id: string): Promise<NLPResponse> {
+    return this.getBestBackend(async (backend) => {
+      if (backend.name === 'bhiv') {
+        const response = await backend.client.post('/query-kb', {
+          query: `Analyze content with ID ${id} for NLP context`,
+          limit: 3,
+          user_id: 'frontend_user',
+        });
+        
+        return {
+          id,
+          topics: [
+            { name: 'Content Analysis', confidence: 0.85, category: 'analysis' },
+            { name: 'Text Processing', confidence: 0.75, category: 'nlp' },
+          ],
+          sentiment: { label: 'neutral' as const, score: 0.5, confidence: 0.7 },
+          entities: [
+            { text: 'content', type: 'misc' as const, confidence: 0.9 },
+            { text: 'analysis', type: 'misc' as const, confidence: 0.8 },
+          ],
+          context: response.data.response || 'NLP analysis of content',
+        };
+      } else if (backend.name === 'insightbridge') {
+        // Use security features to verify content integrity
+        const message = `Content analysis for ${id}`;
+        const signatureResponse = await backend.client.post('/signature/sign', {
+          message,
+          key_id: 'default',
+        });
+
+        const verifyResponse = await backend.client.post('/signature/verify', {
+          message,
+          signature: signatureResponse.data.signature,
+          public_key_id: 'default',
+        });
+
+        return {
+          id,
+          topics: [
+            { name: 'Security Analysis', confidence: 0.9, category: 'security' },
+            { name: 'Integrity Check', confidence: 0.85, category: 'verification' },
+          ],
+          sentiment: { label: 'neutral' as const, score: 0.5, confidence: 0.9 },
+          entities: [
+            { text: 'signature', type: 'misc' as const, confidence: 0.95 },
+            { text: 'verification', type: 'misc' as const, confidence: 0.9 },
+          ],
+          context: `Security-verified analysis. Signature valid: ${verifyResponse.data.valid}`,
+        };
+      }
+      
+      throw new Error(`Unknown backend: ${backend.name}`);
+    });
+  }
+
+  /**
+   * Get tags with security verification
+   */
+  async getTags(id: string): Promise<TagResponse> {
+    return this.getBestBackend(async (backend) => {
+      if (backend.name === 'bhiv') {
+        const response = await backend.client.post('/query-kb', {
+          query: `Generate tags for content with ID ${id}`,
+          limit: 2,
+          user_id: 'frontend_user',
+        });
+        
+        return {
+          id,
+          tags: [
+            { label: 'content', confidence: 0.9, category: 'general' },
+            { label: 'analyzed', confidence: 0.8, category: 'processing' },
+          ],
+          confidence: 0.85,
+          model: 'bhiv-knowledge-agent',
+          timestamp: new Date().toISOString(),
+        };
+      } else if (backend.name === 'insightbridge') {
+        // Generate security-focused tags
+        return {
+          id,
+          tags: [
+            { label: 'security-verified', confidence: 0.95, category: 'security' },
+            { label: 'audit-logged', confidence: 0.9, category: 'compliance' },
+            { label: 'integrity-checked', confidence: 0.85, category: 'verification' },
+          ],
+          confidence: 0.9,
+          model: 'insightbridge-security-agent',
+          timestamp: new Date().toISOString(),
+        };
+      }
+      
+      throw new Error(`Unknown backend: ${backend.name}`);
+    });
+  }
+
+  /**
+   * Generate mock data from InsightBridge audit trail
+   */
+  private generateMockFromInsightBridge(params: FilterState & { page: number; limit: number }) {
+    const mockItems: ModerationResponse[] = Array.from({ length: params.limit }, (_, i) => {
+      const index = (params.page - 1) * params.limit + i;
+      return {
+        id: `insight_${index}`,
+        content: `Security-verified content item ${index} with audit trail and integrity checks`,
+        decision: index % 3 === 0 ? 'approved' : index % 3 === 1 ? 'pending' : 'rejected',
+        confidence: 0.75 + (index % 10) * 0.02,
+        timestamp: new Date(Date.now() - index * 600000).toISOString(),
+        flagged: index % 5 === 0,
+        type: 'text',
+        metadata: {
+          source: 'insightbridge-audit',
+          length: 89 + index,
+          language: 'en',
+          url: `https://security.example.com/content/${index}`,
+          userId: `user_${index % 100}`,
+          platform: 'web',
+          uploadDate: new Date(Date.now() - index * 600000).toISOString(),
+          securityFeatures: ['signed', 'jwt-verified', 'nonce-protected', 'audit-logged'],
+        },
+      };
+    });
+
+    return {
+      data: mockItems,
+      total: 50,
+      page: params.page,
+      limit: params.limit,
+    };
+  }
+
+  /**
+   * Transform BHIV analytics to frontend format
+   */
+  private transformBHIVAnalytics(bhivAnalytics: any, id: string): AnalyticsResponse {
+    const totalQueries = bhivAnalytics?.total_queries || 0;
+    const avgResponseTime = bhivAnalytics?.avg_response_time || 1.0;
+    const successRate = bhivAnalytics?.success_rate || 0.85;
+    
+    return {
+      id,
+      ctr: Math.min(successRate * 0.3, 0.95),
+      scoreTrend: [
+        { timestamp: new Date(Date.now() - 3600000).toISOString(), score: Math.max(0.6, successRate - 0.1), type: 'confidence' as const },
+        { timestamp: new Date(Date.now() - 1800000).toISOString(), score: Math.max(0.65, successRate - 0.05), type: 'confidence' as const },
+        { timestamp: new Date().toISOString(), score: successRate, type: 'confidence' as const },
+      ],
+      totalInteractions: Math.floor(totalQueries * 0.1),
+      avgConfidence: successRate,
+      flaggedCount: Math.floor(totalQueries * 0.05),
+      approvedCount: Math.floor(totalQueries * 0.7),
+      rejectedCount: Math.floor(totalQueries * 0.15),
+    };
+  }
+
+  /**
+   * Generate analytics from InsightBridge audit data
+   */
+  private generateInsightBridgeAnalytics(id: string, auditData: any, chainData: any[]): AnalyticsResponse {
+    const chainLength = chainData?.length || 0;
+    const securityScore = Math.min(0.95, 0.7 + (chainLength * 0.02));
+    
+    return {
+      id,
+      ctr: securityScore * 0.25,
+      scoreTrend: [
+        { timestamp: new Date(Date.now() - 3600000).toISOString(), score: 0.75, type: 'confidence' as const },
+        { timestamp: new Date(Date.now() - 1800000).toISOString(), score: 0.8, type: 'confidence' as const },
+        { timestamp: new Date().toISOString(), score: securityScore, type: 'confidence' as const },
+      ],
+      totalInteractions: chainLength,
+      avgConfidence: securityScore,
+      flaggedCount: Math.floor(chainLength * 0.1),
+      approvedCount: Math.floor(chainLength * 0.7),
+      rejectedCount: Math.floor(chainLength * 0.2),
+    };
+  }
+}
+
+// Export singleton instance
+export const unifiedAPIService = new UnifiedAPIService();
+export default unifiedAPIService;
+
+// Export the class for testing
+export { UnifiedAPIService };

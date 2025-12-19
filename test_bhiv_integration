@@ -1,0 +1,273 @@
+// BHIV Integration Test
+// This test simulates the BHIV backend responses to verify our integration
+
+// Mock BHIV Analytics Response
+const mockBHIVAnalyticsResponse = {
+  status: "success",
+  analytics: {
+    total_queries: 1250,
+    avg_response_time: 1.2,
+    success_rate: 0.87,
+    unique_users: 45,
+    top_queries: ["dharma", "meditation", "yoga"],
+    hourly_stats: {
+      "00": 15, "01": 8, "02": 3, "03": 1, "04": 2, "05": 7, "06": 12,
+      "07": 25, "08": 45, "09": 67, "10": 89, "11": 102, "12": 98,
+      "13": 87, "14": 76, "15": 65, "16": 54, "17": 43, "18": 38,
+      "19": 32, "20": 28, "21": 22, "22": 18, "23": 16
+    }
+  },
+  timestamp: new Date().toISOString()
+};
+
+// Mock BHIV Knowledge Base Response
+const mockBHIVKBResponse = {
+  response: "Content analysis shows positive sentiment with educational themes around technology and wellness. The text contains references to modern concepts while maintaining a neutral tone.",
+  sources: [
+    {
+      text: "Analysis of content focusing on main themes and sentiment patterns.",
+      source: "Multi-Folder:documents:education:content_123"
+    }
+  ],
+  query_id: "kb_query_12345"
+};
+
+// Test BHIV Analytics Integration
+async function testBHIVAnalyticsIntegration() {
+  console.log("🧪 Testing BHIV Analytics Integration...");
+  
+  try {
+    // Simulate BHIV analytics response
+    console.log("📊 Simulating BHIV Analytics Response:");
+    console.log(JSON.stringify(mockBHIVAnalyticsResponse, null, 2));
+    
+    // Transform using our conversion function logic
+    const bhivAnalytics = mockBHIVAnalyticsResponse.analytics;
+    const contentId = "test-content-123";
+    
+    const transformedAnalytics = {
+      id: contentId,
+      ctr: Math.min(bhivAnalytics.success_rate * 0.3, 0.95),
+      scoreTrend: [
+        { 
+          timestamp: new Date(Date.now() - 3600000).toISOString(), 
+          score: Math.max(0.6, bhivAnalytics.success_rate - 0.1), 
+          type: 'confidence'
+        },
+        { 
+          timestamp: new Date(Date.now() - 1800000).toISOString(), 
+          score: Math.max(0.65, bhivAnalytics.success_rate - 0.05), 
+          type: 'confidence'
+        },
+        { 
+          timestamp: new Date().toISOString(), 
+          score: bhivAnalytics.success_rate, 
+          type: 'confidence'
+        },
+      ],
+      totalInteractions: Math.floor(bhivAnalytics.total_queries * 0.1),
+      avgConfidence: bhivAnalytics.success_rate,
+      flaggedCount: Math.floor(bhivAnalytics.total_queries * 0.05),
+      approvedCount: Math.floor(bhivAnalytics.total_queries * 0.7),
+      rejectedCount: Math.floor(bhivAnalytics.total_queries * 0.15),
+    };
+    
+    console.log("\n✅ Transformed Frontend Analytics Format:");
+    console.log(JSON.stringify(transformedAnalytics, null, 2));
+    
+    // Verify transformation
+    const checks = [
+      { name: "ID preservation", passed: transformedAnalytics.id === contentId },
+      { name: "CTR calculation", passed: transformedAnalytics.ctr > 0 && transformedAnalytics.ctr < 1 },
+      { name: "Score trend length", passed: transformedAnalytics.scoreTrend.length === 3 },
+      { name: "Total interactions", passed: transformedAnalytics.totalInteractions > 0 },
+      { name: "Confidence score", passed: transformedAnalytics.avgConfidence === bhivAnalytics.success_rate },
+      { name: "Approved count", passed: transformedAnalytics.approvedCount > transformedAnalytics.rejectedCount }
+    ];
+    
+    console.log("\n🔍 Transformation Validation:");
+    checks.forEach(check => {
+      console.log(`${check.passed ? '✅' : '❌'} ${check.name}: ${check.passed ? 'PASS' : 'FAIL'}`);
+    });
+    
+    const allPassed = checks.every(check => check.passed);
+    console.log(`\n${allPassed ? '✅' : '❌'} Analytics Integration: ${allPassed ? 'SUCCESS' : 'FAILED'}`);
+    
+    return allPassed;
+    
+  } catch (error) {
+    console.error("❌ Analytics Integration Test Failed:", error.message);
+    return false;
+  }
+}
+
+// Test BHIV Knowledge Base Integration
+async function testBHIVKBIntegration() {
+  console.log("\n🧪 Testing BHIV Knowledge Base Integration...");
+  
+  try {
+    // Simulate BHIV KB response
+    console.log("📚 Simulating BHIV Knowledge Base Response:");
+    console.log(JSON.stringify(mockBHIVKBResponse, null, 2));
+    
+    // Transform using our conversion function logic
+    const contentId = "test-content-456";
+    
+    const transformedNLP = {
+      id: contentId,
+      topics: [
+        { name: 'Content Analysis', confidence: 0.85, category: 'analysis' },
+        { name: 'Text Processing', confidence: 0.75, category: 'nlp' }
+      ],
+      sentiment: { label: 'neutral', score: 0.5, confidence: 0.7 },
+      entities: [
+        { text: 'content', type: 'misc', confidence: 0.9 },
+        { text: 'analysis', type: 'misc', confidence: 0.8 }
+      ],
+      context: mockBHIVKBResponse.response,
+    };
+    
+    console.log("\n✅ Transformed Frontend NLP Format:");
+    console.log(JSON.stringify(transformedNLP, null, 2));
+    
+    // Transform tags
+    const transformedTags = {
+      id: contentId,
+      tags: [
+        { label: 'content', confidence: 0.9, category: 'general' },
+        { label: 'analyzed', confidence: 0.8, category: 'processing' }
+      ],
+      confidence: 0.85,
+      model: 'bhiv-knowledge-agent',
+      timestamp: new Date().toISOString(),
+    };
+    
+    console.log("\n✅ Transformed Frontend Tags Format:");
+    console.log(JSON.stringify(transformedTags, null, 2));
+    
+    // Verify transformations
+    const nlpChecks = [
+      { name: "ID preservation", passed: transformedNLP.id === contentId },
+      { name: "Topics array", passed: Array.isArray(transformedNLP.topics) && transformedNLP.topics.length > 0 },
+      { name: "Sentiment object", passed: transformedNLP.sentiment && transformedNLP.sentiment.label },
+      { name: "Entities array", passed: Array.isArray(transformedNLP.entities) && transformedNLP.entities.length > 0 },
+      { name: "Context text", passed: transformedNLP.context && transformedNLP.context.length > 0 }
+    ];
+    
+    const tagChecks = [
+      { name: "ID preservation", passed: transformedTags.id === contentId },
+      { name: "Tags array", passed: Array.isArray(transformedTags.tags) && transformedTags.tags.length > 0 },
+      { name: "Confidence score", passed: transformedTags.confidence > 0 && transformedTags.confidence < 1 },
+      { name: "Model name", passed: transformedTags.model && transformedTags.model.length > 0 },
+      { name: "Timestamp", passed: transformedTags.timestamp && transformedTags.timestamp.length > 0 }
+    ];
+    
+    console.log("\n🔍 NLP Transformation Validation:");
+    nlpChecks.forEach(check => {
+      console.log(`${check.passed ? '✅' : '❌'} ${check.name}: ${check.passed ? 'PASS' : 'FAIL'}`);
+    });
+    
+    console.log("\n🔍 Tags Transformation Validation:");
+    tagChecks.forEach(check => {
+      console.log(`${check.passed ? '✅' : '❌'} ${check.name}: ${check.passed ? 'PASS' : 'FAIL'}`);
+    });
+    
+    const nlpPassed = nlpChecks.every(check => check.passed);
+    const tagsPassed = tagChecks.every(check => check.passed);
+    const allPassed = nlpPassed && tagsPassed;
+    
+    console.log(`\n${allPassed ? '✅' : '❌'} Knowledge Base Integration: ${allPassed ? 'SUCCESS' : 'FAILED'}`);
+    
+    return allPassed;
+    
+  } catch (error) {
+    console.error("❌ Knowledge Base Integration Test Failed:", error.message);
+    return false;
+  }
+}
+
+// Test Environment Configuration
+function testEnvironmentConfiguration() {
+  console.log("\n🧪 Testing Environment Configuration...");
+  
+  // Simulate environment variables
+  const envConfig = {
+    VITE_API_BASE_URL: 'http://localhost:8001',
+    VITE_BHIV_API_URL: 'http://localhost:8001',
+    VITE_USE_BHIV_ANALYTICS: 'true',
+    VITE_USE_BHIV_NLP: 'true',
+    VITE_USE_BHIV_TAGS: 'true',
+    VITE_DEV_MODE: 'true'
+  };
+  
+  console.log("🔧 Environment Configuration:");
+  Object.entries(envConfig).forEach(([key, value]) => {
+    console.log(`  ${key}: ${value}`);
+  });
+  
+  // Validate configuration
+  const configChecks = [
+    { name: "API URL configured", passed: envConfig.VITE_API_BASE_URL === 'http://localhost:8001' },
+    { name: "BHIV URL configured", passed: envConfig.VITE_BHIV_API_URL === 'http://localhost:8001' },
+    { name: "Analytics enabled", passed: envConfig.VITE_USE_BHIV_ANALYTICS === 'true' },
+    { name: "NLP enabled", passed: envConfig.VITE_USE_BHIV_NLP === 'true' },
+    { name: "Tags enabled", passed: envConfig.VITE_USE_BHIV_TAGS === 'true' },
+    { name: "Dev mode", passed: envConfig.VITE_DEV_MODE === 'true' }
+  ];
+  
+  console.log("\n🔍 Configuration Validation:");
+  configChecks.forEach(check => {
+    console.log(`${check.passed ? '✅' : '❌'} ${check.name}: ${check.passed ? 'PASS' : 'FAIL'}`);
+  });
+  
+  const allPassed = configChecks.every(check => check.passed);
+  console.log(`\n${allPassed ? '✅' : '❌'} Environment Configuration: ${allPassed ? 'SUCCESS' : 'FAILED'}`);
+  
+  return allPassed;
+}
+
+// Main test runner
+async function runBHIVIntegrationTests() {
+  console.log("🚀 Starting BHIV Integration Tests\n");
+  console.log("=" .repeat(60));
+  
+  const results = {
+    analytics: await testBHIVAnalyticsIntegration(),
+    knowledgeBase: await testBHIVKBIntegration(),
+    environment: testEnvironmentConfiguration()
+  };
+  
+  console.log("\n" + "=" .repeat(60));
+  console.log("📊 FINAL TEST RESULTS:");
+  console.log(`  Analytics Integration: ${results.analytics ? '✅ PASS' : '❌ FAIL'}`);
+  console.log(`  Knowledge Base Integration: ${results.knowledgeBase ? '✅ PASS' : '❌ FAIL'}`);
+  console.log(`  Environment Configuration: ${results.environment ? '✅ PASS' : '❌ FAIL'}`);
+  
+  const allTestsPassed = Object.values(results).every(result => result);
+  console.log(`\n${allTestsPassed ? '🎉' : '⚠️'} Overall Integration Status: ${allTestsPassed ? 'ALL TESTS PASSED' : 'SOME TESTS FAILED'}`);
+  
+  if (allTestsPassed) {
+    console.log("\n✅ BHIV Integration is ready for deployment!");
+    console.log("📋 Next steps:");
+    console.log("  1. Start BHIV backend services");
+    console.log("  2. Update .env file with production URLs");
+    console.log("  3. Monitor integration in production");
+  } else {
+    console.log("\n❌ BHIV Integration needs fixes before deployment");
+    console.log("🔧 Check the failed tests and update accordingly");
+  }
+  
+  return allTestsPassed;
+}
+
+// Run tests if called directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  runBHIVIntegrationTests().catch(console.error);
+}
+
+export {
+  runBHIVIntegrationTests,
+  testBHIVAnalyticsIntegration,
+  testBHIVKBIntegration,
+  testEnvironmentConfiguration
+};

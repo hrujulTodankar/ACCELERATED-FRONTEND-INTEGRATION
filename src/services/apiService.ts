@@ -201,13 +201,13 @@ export const getModerationItem = async (id: string) => {
   }
 };
 
-export const submitFeedback = async (feedback: Omit<FeedbackResponse, 'id' | 'timestamp'>) => {
+export const submitFeedback = async (feedback: Omit<FeedbackResponse, 'id' | 'timestamp'> & { itemId?: string }) => {
   try {
     // Transform frontend feedback format to backend format
     // Backend expects: { moderationId: string, feedback: string, userId: string }
     // Frontend sends: { thumbsUp: boolean, comment?: string, userId: string, itemId?: string }
     const backendFeedback = {
-      moderationId: 'general_feedback',
+      moderationId: feedback.itemId || 'general_feedback',
       feedback: feedback.comment || (feedback.thumbsUp ? 'Positive feedback' : 'Negative feedback'),
       userId: feedback.userId,
     };
@@ -255,16 +255,17 @@ export const getAnalytics = async (id: string) => {
   }
 };
 
-export const getNLPContext = async (id: string) => {
+export const getNLPContext = async (id: string, content?: string) => {
   try {
-    // Try dedicated NLP context endpoint first
+    // Try dedicated NLP context endpoint first with actual content
+    const textToAnalyze = content || `Content for analysis with ID ${id}`;
     const response: AxiosResponse<{
       status: string;
       analysis: any;
       timestamp: string;
     }> = await api.get('/nlp/context', {
       params: {
-        text: `Content for analysis with ID ${id}`,
+        text: textToAnalyze,
         analysis_type: 'full'
       }
     });
@@ -287,12 +288,13 @@ export const getNLPContext = async (id: string) => {
     console.error('Error fetching NLP context from BHIV backend:', error);
     // Fallback to knowledge base endpoint
     try {
+      const textToAnalyze = content || `Content for analysis with ID ${id}`;
       const kbResponse: AxiosResponse<{
         response: string;
         sources: any[];
         query_id: string;
       }> = await api.post('/query-kb', {
-        query: `Analyze content with ID ${id} for NLP context`,
+        query: `Analyze the following content for NLP context: ${textToAnalyze}`,
         limit: 3,
         user_id: 'frontend_user'
       });
@@ -312,18 +314,20 @@ export const getNLPContext = async (id: string) => {
       };
     } catch (kbError) {
       console.error('Error fetching NLP context from knowledge base:', kbError);
-      // Return mock NLP context in development mode
+      // Return mock NLP context in development mode with actual content
       if (import.meta.env.DEV) {
-        return generateMockNLPContext(id, `Content for analysis ${id}`);
+        const textToAnalyze = content || `Content for analysis ${id}`;
+        return generateMockNLPContext(id, textToAnalyze);
       }
-      throw error;
+      throw kbError; // Fixed: Throw the correct error from fallback catch block
     }
   }
 };
 
-export const getTags = async (id: string) => {
+export const getTags = async (id: string, content?: string) => {
   try {
-    // Try dedicated tag endpoint first
+    // Try dedicated tag endpoint first with actual content
+    const contentToTag = content || `Content for tagging with ID ${id}`;
     const response: AxiosResponse<{
       status: string;
       tags: any[];
@@ -331,7 +335,7 @@ export const getTags = async (id: string) => {
       timestamp: string;
     }> = await api.get('/tag', {
       params: {
-        content: `Content for tagging with ID ${id}`,
+        content: contentToTag,
         max_tags: 5
       }
     });
@@ -355,12 +359,13 @@ export const getTags = async (id: string) => {
     console.error('Error fetching tags from BHIV backend:', error);
     // Fallback to knowledge base endpoint
     try {
+      const contentToTag = content || `Content for tagging with ID ${id}`;
       const kbResponse: AxiosResponse<{
         response: string;
         sources: any[];
         query_id: string;
       }> = await api.post('/query-kb', {
-        query: `Generate tags for content with ID ${id}`,
+        query: `Generate relevant tags for the following content: ${contentToTag}`,
         limit: 2,
         user_id: 'frontend_user'
       });
@@ -381,7 +386,7 @@ export const getTags = async (id: string) => {
       if (import.meta.env.DEV) {
         return generateMockTags(id, 0);
       }
-      throw error;
+      throw kbError; // Fixed: Throw the correct error from fallback catch block
     }
   }
 };
