@@ -53,7 +53,6 @@ const Dashboard: React.FC = () => {
           console.error('Error fetching additional data:', error);
         }
       };
-      
       fetchAdditionalData();
     }
   }, [selectedItem, fetchAnalytics, fetchNLPContext, fetchTags]);
@@ -124,42 +123,39 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen relative">
-      
       {/* Header */}
-      <header className="bg-white/10 backdrop-blur-sm shadow-sm border-b border-gray-200/50 relative z-10" >
+      <header className="/10 backdrop-blur-sm shadow-sm border-b border-gray-200/50 relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-gray-900">
-                Content Moderation Dashboard
-              </h1>
+              <h1 className="text-2xl font-bold ">Content Moderation Dashboard</h1>
               <div className="ml-6 flex space-x-4">
                 <div className="flex items-center text-sm text-gray-600">
-                  <span className="font-medium text-gray-900">{statusCounts.total}</span>
-                  <span className="ml-1">Total</span>
+                  <span className="font-medium ">{statusCounts.total}</span>
+                  <span className="ml-1 ">Total</span>
                 </div>
                 <div className="flex items-center text-sm text-green-600">
                   <span className="font-medium">{statusCounts.approved}</span>
-                  <span className="ml-1">Approved</span>
+                  <span className="ml-1 ">Approved</span>
                 </div>
                 <div className="flex items-center text-sm text-red-600">
                   <span className="font-medium">{statusCounts.rejected}</span>
-                  <span className="ml-1">Rejected</span>
+                  <span className="ml-1 ">Rejected</span>
                 </div>
                 <div className="flex items-center text-sm text-yellow-600">
                   <span className="font-medium">{statusCounts.pending}</span>
-                  <span className="ml-1">Pending</span>
+                  <span className="ml-1 ">Pending</span>
                 </div>
                 <div className="flex items-center text-sm text-orange-600">
                   <span className="font-medium">{statusCounts.flagged}</span>
-                  <span className="ml-1">Flagged</span>
+                  <span className="ml-1 ">Flagged</span>
                 </div>
               </div>
             </div>
             <button
               onClick={handleRefresh}
               disabled={loading.moderation || isRefreshing}
-              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50"
+              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled: "
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
               Refresh
@@ -171,30 +167,23 @@ const Dashboard: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 relative z-10">
         {/* Filters */}
         <div className="mb-6">
-          <FilterBar
-            filters={filters}
-            onFilterChange={handleFilterChange}
-            onSearch={handleSearch}
-          />
+          <FilterBar filters={filters} onFilterChange={handleFilterChange} onSearch={handleSearch} />
         </div>
 
         {/* Error State */}
         {error.moderation && (
           <div className="mb-6">
-            <ErrorState
-              message={error.moderation}
-              onRetry={handleRefresh}
-            />
+            <ErrorState message={error.moderation} onRetry={handleRefresh} />
           </div>
         )}
 
         {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 bg-transparent">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Content List */}
           <div className="lg:col-span-2">
-            <div className="bg-white/10 backdrop-blur-sm shadow rounded-lg">
+            <div className="bg-white shadow rounded-lg">
               <div className="px-6 py-4 border-b border-gray-200">
-                <h2 className="text-lg font-medium text-gray-900">
+                <h2 className="text-lg font-medium ">
                   Content Queue
                   {loading.moderation && (
                     <span className="ml-2 inline-flex items-center">
@@ -203,8 +192,7 @@ const Dashboard: React.FC = () => {
                   )}
                 </h2>
               </div>
-              
-              <div className="divide-y divide-gray-200 bg-transparent">
+              <div className="divide-y divide-gray-200">
                 {loading.moderation ? (
                   <LoadingSkeleton count={5} />
                 ) : items.length > 0 ? (
@@ -226,7 +214,7 @@ const Dashboard: React.FC = () => {
 
               {/* Pagination */}
               {pagination.totalPages > 1 && (
-                <div className="px-6 py-4 border-t border-gray-200 bg-transparent">
+                <div className="px-6 py-4 border-t border-gray-200">
                   <Pagination
                     currentPage={pagination.currentPage}
                     totalPages={pagination.totalPages}
@@ -238,15 +226,13 @@ const Dashboard: React.FC = () => {
           </div>
 
           {/* Sidebar */}
-          <div className="lg:col-span-1 bg-transparent">
+          <div className="lg:col-span-1">
             {selectedItem ? (
               <div className="space-y-6">
                 {/* Basic Item Info */}
-                <div className="bg-white/10 backdrop-blur-sm shadow rounded-lg p-6">
+                <div className=" shadow rounded-lg p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-medium text-gray-900">
-                      Content Details
-                    </h3>
+                    <h3 className="text-lg font-medium ">Content Details</h3>
                     {selectedItem.statusBadge && (
                       <StatusBadge
                         status={selectedItem.statusBadge.type}
@@ -254,39 +240,35 @@ const Dashboard: React.FC = () => {
                       />
                     )}
                   </div>
-                  
-                  <div className="space-y-3 bg-transparent">
+                  <div className="space-y-3">
                     <div>
                       <p className="text-xs text-gray-500">Content ID</p>
-                      <p className="text-sm font-mono">{selectedItem.id}</p>
+                      <p className="text-sm font-mono ">{selectedItem.id}</p>
                     </div>
-                    
-                    <div className="flex justify-between bg-inherit">
+                    <div className="flex justify-between">
                       <div>
                         <p className="text-xs text-gray-500">Status</p>
-                        <p className="text-sm font-medium capitalize">{selectedItem.decision}</p>
+                        <p className="text-sm font-medium capitalize ">{selectedItem.decision}</p>
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 bg-inherit">Confidence</p>
-                        <p className="text-sm font-medium">{(selectedItem.confidence * 100).toFixed(1)}%</p>
+                        <p className="text-xs text-gray-500">Confidence</p>
+                        <p className="text-sm font-medium ">{(selectedItem.confidence * 100).toFixed(1)}%</p>
                       </div>
                     </div>
-                    
-                    <div className="flex justify-between bg-inherit">
+                    <div className="flex justify-between">
                       <div>
                         <p className="text-xs text-gray-500">Type</p>
-                        <p className="text-sm font-medium capitalize">{selectedItem.type}</p>
+                        <p className="text-sm font-medium capitalize ">{selectedItem.type}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-500">Flagged</p>
-                        <p className="text-sm font-medium">{selectedItem.flagged ? 'Yes' : 'No'}</p>
+                        <p className="text-sm font-medium ">{selectedItem.flagged ? 'Yes' : 'No'}</p>
                       </div>
                     </div>
-
                     {selectedItem.rewardStatus && (
                       <div>
                         <p className="text-xs text-gray-500">Reward Status</p>
-                        <p className="text-sm font-medium capitalize">{selectedItem.rewardStatus}</p>
+                        <p className="text-sm font-medium capitalize ">{selectedItem.rewardStatus}</p>
                       </div>
                     )}
                   </div>
@@ -294,35 +276,24 @@ const Dashboard: React.FC = () => {
 
                 {/* Analytics Panel */}
                 {selectedItem.analytics && (
-                  <AnalyticsPanel
-                    analytics={selectedItem.analytics}
-                    loading={loading.analytics}
-                  />
+                  <AnalyticsPanel analytics={selectedItem.analytics} loading={loading.analytics} />
                 )}
 
                 {/* NLP Context Panel */}
                 {selectedItem.nlpContext && (
-                  <NLPContextPanel
-                    nlpData={selectedItem.nlpContext}
-                    loading={loading.nlp}
-                  />
+                  <NLPContextPanel nlpData={selectedItem.nlpContext} loading={loading.nlp} />
                 )}
 
                 {/* Tags Panel */}
                 {selectedItem.tags && (
-                  <TagsPanel
-                    tagsData={selectedItem.tags}
-                    loading={loading.tags}
-                  />
+                  <TagsPanel tagsData={selectedItem.tags} loading={loading.tags} />
                 )}
               </div>
             ) : (
-              <div className="bg-white/10 backdrop-blur-sm shadow rounded-lg p-6">
+              <div className=" shadow rounded-lg p-6">
                 <div className="text-center text-gray-500">
                   <Filter className="mx-auto h-12 w-12 text-gray-400" />
-                  <h3 className="mt-2 text-sm font-medium text-gray-900">
-                    No content selected
-                  </h3>
+                  <h3 className="mt-2 text-sm font-medium ">No content selected</h3>
                   <p className="mt-1 text-sm text-gray-500">
                     Select a content item to view detailed analytics, NLP analysis, and tags.
                   </p>

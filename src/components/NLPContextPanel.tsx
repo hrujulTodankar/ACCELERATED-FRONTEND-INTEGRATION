@@ -1,21 +1,37 @@
 import React from 'react';
-import { NLPResponse } from '../types';
-import { Brain, MessageSquare, Users, Hash } from 'lucide-react';
+import { Brain, Hash, AlertTriangle } from 'lucide-react';
+
+interface Entity {
+  text: string;
+  label: string;
+  confidence: number;
+}
+
+interface NLPData {
+  entities: Entity[];
+  sentiment: {
+    score: number;
+    label: 'positive' | 'negative' | 'neutral';
+  };
+  keywords: string[];
+  language?: string;
+  summary?: string;
+}
 
 interface NLPContextPanelProps {
-  nlpData: NLPResponse;
+  nlpData: NLPData;
   loading?: boolean;
 }
 
 const NLPContextPanel: React.FC<NLPContextPanelProps> = ({ nlpData, loading = false }) => {
   if (loading) {
     return (
-      <div className="bg-white/10 backdrop-blur-sm rounded-lg shadow p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">NLP Analysis</h3>
+      <div className="bg-white rounded-lg shadow p-6">
+        <h3 className="text-lg font-medium mb-4">NLP Analysis</h3>
         <div className="animate-pulse space-y-3">
-          <div className="h-4 bg-gray-200/50 rounded w-3/4"></div>
-          <div className="h-4 bg-gray-200/50 rounded w-1/2"></div>
-          <div className="h-4 bg-gray-200/50 rounded w-2/3"></div>
+          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          <div className="h-4 bg-gray-200 rounded w-2/3"></div>
         </div>
       </div>
     );
@@ -24,113 +40,103 @@ const NLPContextPanel: React.FC<NLPContextPanelProps> = ({ nlpData, loading = fa
   const getSentimentColor = (label: string) => {
     switch (label) {
       case 'positive':
-        return 'text-green-600 bg-green-100/50';
+        return 'text-green-600 bg-green-100';
       case 'negative':
-        return 'text-red-600 bg-red-100/50';
+        return 'text-red-600 bg-red-100';
       default:
-        return 'text-gray-600 bg-gray-100/50';
+        return 'text-gray-600 bg-gray-100';
     }
   };
 
-  const getSentimentIcon = (label: string) => {
-    switch (label) {
-      case 'positive':
-        return '😊';
-      case 'negative':
-        return '😞';
+  const getEntityColor = (label: string) => {
+    switch (label.toLowerCase()) {
+      case 'person':
+        return 'bg-blue-100 text-blue-800';
+      case 'location':
+        return 'bg-green-100 text-green-800';
+      case 'organization':
+        return 'bg-purple-100 text-purple-800';
       default:
-        return '😐';
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
   return (
-    <div className="bg-white/10 backdrop-blur-sm rounded-lg shadow p-6">
-      <div className="flex items-center mb-4">
-        <Brain className="h-5 w-5 text-purple-500 mr-2" />
-        <h3 className="text-lg font-medium text-gray-900">NLP Analysis</h3>
-      </div>
-
-      {/* Sentiment Analysis */}
-      <div className="mb-6">
-        <div className="flex items-center mb-3">
-          <MessageSquare className="h-4 w-4 text-purple-500 mr-2" />
-          <h4 className="text-sm font-medium text-gray-700">Sentiment</h4>
-        </div>
-        <div className="flex items-center space-x-3">
-          <span className="text-2xl">{getSentimentIcon(nlpData.sentiment.label)}</span>
-          <div>
+    <div className="bg-white rounded-lg shadow p-6">
+      <h3 className="text-lg font-medium mb-4">NLP Analysis</h3>
+      <div className="space-y-4">
+        {/* Sentiment */}
+        <div>
+          <h4 className="text-sm font-medium mb-2">Sentiment</h4>
+          <div className="flex items-center space-x-2">
             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getSentimentColor(nlpData.sentiment.label)}`}>
               {nlpData.sentiment.label.charAt(0).toUpperCase() + nlpData.sentiment.label.slice(1)}
             </span>
-            <p className="text-xs text-gray-500 mt-1">
-              Score: {nlpData.sentiment.score.toFixed(2)} • Confidence: {(nlpData.sentiment.confidence * 100).toFixed(0)}%
-            </p>
+            <span className="text-sm text-gray-600">
+              Score: {(nlpData.sentiment.score * 100).toFixed(1)}%
+            </span>
           </div>
         </div>
-      </div>
 
-      {/* Topics */}
-      <div className="mb-6">
-        <div className="flex items-center mb-3">
-          <Hash className="h-4 w-4 text-blue-500 mr-2" />
-          <h4 className="text-sm font-medium text-gray-700">Topics</h4>
-        </div>
-        <div className="space-y-2">
-          {nlpData.topics.map((topic, index) => (
-            <div key={index} className="flex items-center justify-between">
-              <div className="flex items-center">
-                <span className="text-sm font-medium text-gray-900">{topic.name}</span>
-                <span className="ml-2 text-xs text-gray-500">({topic.category})</span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-16 bg-gray-200/50 rounded-full h-2 mr-2">
-                  <div 
-                    className="bg-blue-500 h-2 rounded-full" 
-                    style={{ width: `${topic.confidence * 100}%` }}
-                  ></div>
+        {/* Entities */}
+        {nlpData.entities && nlpData.entities.length > 0 && (
+          <div>
+            <h4 className="text-sm font-medium mb-2">Entities</h4>
+            <div className="flex flex-wrap gap-2">
+              {nlpData.entities.map((entity, index) => (
+                <div 
+                  key={index}
+                  className="flex items-center space-x-1"
+                >
+                  <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${getEntityColor(entity.label)}`}>
+                    {entity.text}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    ({entity.confidence.toFixed(2)})
+                  </span>
                 </div>
-                <span className="text-xs font-medium text-gray-700">
-                  {(topic.confidence * 100).toFixed(0)}%
-                </span>
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
+        )}
 
-      {/* Entities */}
-      <div className="mb-6">
-        <div className="flex items-center mb-3">
-          <Users className="h-4 w-4 text-green-500 mr-2" />
-          <h4 className="text-sm font-medium text-gray-700">Entities</h4>
-        </div>
-        <div className="space-y-2">
-          {nlpData.entities.map((entity, index) => (
-            <div key={index} className="flex items-center justify-between">
-              <div className="flex items-center">
-                <span className="text-sm font-medium text-gray-900">"{entity.text}"</span>
-                <span className="ml-2 text-xs text-gray-500">({entity.type})</span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-12 bg-gray-200/50 rounded-full h-2 mr-2">
-                  <div 
-                    className="bg-green-500 h-2 rounded-full" 
-                    style={{ width: `${entity.confidence * 100}%` }}
-                  ></div>
-                </div>
-                <span className="text-xs font-medium text-gray-700">
-                  {(entity.confidence * 100).toFixed(0)}%
+        {/* Keywords */}
+        {nlpData.keywords && nlpData.keywords.length > 0 && (
+          <div>
+            <h4 className="text-sm font-medium mb-2">Keywords</h4>
+            <div className="flex flex-wrap gap-2">
+              {nlpData.keywords.map((keyword, index) => (
+                <span 
+                  key={index}
+                  className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-800"
+                >
+                  <Hash className="h-3 w-3 mr-1" />
+                  {keyword}
                 </span>
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
+        )}
 
-      {/* Context Summary */}
-      <div className="border-t pt-4">
-        <h4 className="text-sm font-medium text-gray-700 mb-2">Context Summary</h4>
-        <p className="text-sm text-gray-600 leading-relaxed">{nlpData.context}</p>
+        {/* Language */}
+        {nlpData.language && (
+          <div>
+            <h4 className="text-sm font-medium mb-2">Language</h4>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+              {nlpData.language.toUpperCase()}
+            </span>
+          </div>
+        )}
+
+        {/* Summary */}
+        {nlpData.summary && (
+          <div>
+            <h4 className="text-sm font-medium mb-2">Summary</h4>
+            <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded">
+              {nlpData.summary}
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

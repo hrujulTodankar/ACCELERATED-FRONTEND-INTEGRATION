@@ -1,227 +1,164 @@
 import React, { useState } from 'react';
-import { FilterBarProps } from '../types';
-import { Search, Filter, X } from 'lucide-react';
+import { Search, Filter, Settings, X } from 'lucide-react';
 
-const FilterBar: React.FC<FilterBarProps> = ({
-  filters,
-  onFilterChange,
-  onSearch,
-}) => {
+interface FilterBarProps {
+  filters: any;
+  onFilterChange: (filters: any) => void;
+  onSearch: (searchTerm: string) => void;
+}
+
+const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange, onSearch }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [localFilters, setLocalFilters] = useState(filters);
 
-  const handleTypeChange = (type: any) => {
-    onFilterChange({ ...filters, type });
-  };
-
-  const handleScoreChange = (score: any) => {
-    onFilterChange({ ...filters, score });
-  };
-
-  const handleFlaggedChange = (flagged: any) => {
-    onFilterChange({ ...filters, flagged });
-  };
-
-  const handleDateChange = (date: any) => {
-    onFilterChange({ ...filters, date });
+  const handleFilterChange = (key: string, value: any) => {
+    const newFilters = { ...localFilters, [key]: value };
+    setLocalFilters(newFilters);
+    onFilterChange(newFilters);
   };
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const searchTerm = e.target.value;
-    onSearch(searchTerm);
+    onSearch(e.target.value);
   };
 
   const clearFilters = () => {
-    onFilterChange({
-      type: 'all',
-      score: 'all',
-      flagged: 'all',
-      date: 'all',
+    const clearedFilters = {
       search: '',
-    });
-    onSearch('');
+      decision: '',
+      type: '',
+      confidenceRange: [0, 1],
+      flagged: null
+    };
+    setLocalFilters(clearedFilters);
+    onFilterChange(clearedFilters);
   };
 
-  const hasActiveFilters = filters.type !== 'all' || 
-                          filters.score !== 'all' || 
-                          filters.flagged !== 'all' || 
-                          filters.date !== 'all' || 
-                          filters.search.trim() !== '';
-
   return (
-    <div className="bg-white shadow rounded-lg p-6">
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-        {/* Search Input */}
-        <div className="flex-1 max-w-lg">
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-gray-400" />
-            </div>
-            <input
-              type="text"
-              placeholder="Search content..."
-              value={filters.search}
-              onChange={handleSearchChange}
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
-            />
-          </div>
+    <div className="  rounded-lg shadow p-4">
+      {/* Basic Filters */}
+      <div className="flex items-center space-x-4 mb-4">
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Search content..."
+            value={filters.search || ''}
+            onChange={handleSearchChange}
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+          />
         </div>
-
-        {/* Quick Filters */}
+        
         <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
+            <label className="text-sm font-medium text-gray-700">Decision:</label>
+            <select
+              value={filters.decision || ''}
+              onChange={(e) => handleFilterChange('decision', e.target.value)}
+              className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+            >
+              <option value="">All</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+              <option value="pending">Pending</option>
+            </select>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <label className="text-sm font-medium text-gray-700">Type:</label>
+            <select
+              value={filters.type || ''}
+              onChange={(e) => handleFilterChange('type', e.target.value)}
+              className="border border-gray-300 rounded-md px-3 py-2 text-sm"
+            >
+              <option value="">All</option>
+              <option value="text">Text</option>
+              <option value="image">Image</option>
+              <option value="video">Video</option>
+              <option value="audio">Audio</option>
+            </select>
+          </div>
+          
           <button
             onClick={() => setShowAdvanced(!showAdvanced)}
-            className={`inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 ${
-              showAdvanced 
-                ? 'text-primary-700 bg-primary-100 border-primary-300 hover:bg-primary-200' 
-                : 'text-gray-700 bg-white hover:bg-gray-50'
-            }`}
+            className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700  hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
           >
-            <Filter className="h-4 w-4 mr-2" />
-            Filters
-            {hasActiveFilters && (
-              <span className="ml-2 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-primary-600 bg-primary-100 rounded-full">
-                Active
-              </span>
-            )}
+            <Settings className="h-4 w-4 mr-2" />
+            Advanced
           </button>
-
-          {hasActiveFilters && (
-            <button
-              onClick={clearFilters}
-              className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-            >
-              <X className="h-4 w-4 mr-2" />
-              Clear
-            </button>
-          )}
+          
+          <button
+            onClick={clearFilters}
+            className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700  hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+          >
+            <X className="h-4 w-4 mr-2" />
+            Clear
+          </button>
         </div>
       </div>
-
+      
       {/* Advanced Filters */}
       {showAdvanced && (
-        <div className="mt-6 pt-6 border-t border-gray-200">
+        <div className="border-t pt-4 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Content Type Filter */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Content Type
+                Confidence Range: {Math.round((filters.confidenceRange?.[0] || 0) * 100)}% - {Math.round((filters.confidenceRange?.[1] || 1) * 100)}%
               </label>
+              <div className="space-y-2">
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={filters.confidenceRange?.[0] || 0}
+                  onChange={(e) => handleFilterChange('confidenceRange', [parseFloat(e.target.value), filters.confidenceRange?.[1] || 1])}
+                  className="w-full"
+                />
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={filters.confidenceRange?.[1] || 1}
+                  onChange={(e) => handleFilterChange('confidenceRange', [filters.confidenceRange?.[0] || 0, parseFloat(e.target.value)])}
+                  className="w-full"
+                />
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Flagged Status</label>
               <select
-                value={filters.type}
-                onChange={(e) => handleTypeChange(e.target.value)}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                value={filters.flagged === null ? '' : filters.flagged.toString()}
+                onChange={(e) => handleFilterChange('flagged', e.target.value === '' ? null : e.target.value === 'true')}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
               >
-                <option value="all">All Types</option>
-                <option value="text">Text</option>
-                <option value="image">Image</option>
-                <option value="video">Video</option>
+                <option value="">All</option>
+                <option value="true">Flagged</option>
+                <option value="false">Not Flagged</option>
               </select>
             </div>
-
-            {/* Score Filter */}
+            
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Confidence Score
-              </label>
-              <select
-                value={filters.score}
-                onChange={(e) => handleScoreChange(e.target.value)}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-              >
-                <option value="all">All Scores</option>
-                <option value="high">High (80%+)</option>
-                <option value="medium">Medium (60-79%)</option>
-                <option value="low">Low (0-59%)</option>
-              </select>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+              <input
+                type="date"
+                value={filters.startDate || ''}
+                onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+              />
             </div>
-
-            {/* Flagged Filter */}
+            
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Flagged Status
-              </label>
-              <select
-                value={filters.flagged}
-                onChange={(e) => handleFlaggedChange(e.target.value)}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-              >
-                <option value="all">All Items</option>
-                <option value="flagged">Flagged Only</option>
-                <option value="unflagged">Unflagged Only</option>
-              </select>
-            </div>
-
-            {/* Date Filter */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Date Range
-              </label>
-              <select
-                value={filters.date}
-                onChange={(e) => handleDateChange(e.target.value)}
-                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-              >
-                <option value="all">All Time</option>
-                <option value="today">Today</option>
-                <option value="week">This Week</option>
-                <option value="month">This Month</option>
-              </select>
+              <label className="block text-sm font-medium text-gray-700 mb-2">&nbsp;</label>
+              <input
+                type="date"
+                value={filters.endDate || ''}
+                onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+              />
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Active Filters Summary */}
-      {hasActiveFilters && (
-        <div className="mt-4 flex flex-wrap gap-2">
-          {filters.type !== 'all' && (
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 text-primary-800">
-              Type: {filters.type}
-              <button
-                onClick={() => handleTypeChange('all')}
-                className="ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full text-primary-400 hover:bg-primary-200 hover:text-primary-500 focus:outline-none"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </span>
-          )}
-          
-          {filters.score !== 'all' && (
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 text-primary-800">
-              Score: {filters.score}
-              <button
-                onClick={() => handleScoreChange('all')}
-                className="ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full text-primary-400 hover:bg-primary-200 hover:text-primary-500 focus:outline-none"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </span>
-          )}
-          
-          {filters.flagged !== 'all' && (
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 text-primary-800">
-              {filters.flagged === 'flagged' ? 'Flagged' : 'Unflagged'}
-              <button
-                onClick={() => handleFlaggedChange('all')}
-                className="ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full text-primary-400 hover:bg-primary-200 hover:text-primary-500 focus:outline-none"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </span>
-          )}
-          
-          {filters.date !== 'all' && (
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary-100 text-primary-800">
-              {filters.date === 'today' ? 'Today' : 
-               filters.date === 'week' ? 'This Week' : 'This Month'}
-              <button
-                onClick={() => handleDateChange('all')}
-                className="ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full text-primary-400 hover:bg-primary-200 hover:text-primary-500 focus:outline-none"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </span>
-          )}
         </div>
       )}
     </div>
