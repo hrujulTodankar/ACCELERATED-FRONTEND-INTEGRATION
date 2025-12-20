@@ -6,6 +6,7 @@ const FeedbackBar: React.FC<FeedbackBarProps> = ({
   onFeedback,
   currentFeedback,
   loading = false,
+  itemId,
 }) => {
   const [thumbsUp, setThumbsUp] = useState(false);
   const [thumbsDown, setThumbsDown] = useState(false);
@@ -52,6 +53,7 @@ const FeedbackBar: React.FC<FeedbackBarProps> = ({
         thumbsUp: isPositive,
         comment: comment.trim() || undefined,
         userId: 'current-user', // This would come from auth context
+        itemId: itemId,
       });
       
       // Reset form on success

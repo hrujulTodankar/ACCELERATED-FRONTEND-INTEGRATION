@@ -11,7 +11,7 @@ import {
 // Create axios instance with base configuration pointing to BHIV Simple API
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8001',
-  timeout: 10000,
+  timeout: 10000, // 10 second timeout for all requests
   headers: {
     'Content-Type': 'application/json',
   },
@@ -212,12 +212,19 @@ export const submitFeedback = async (feedback: Omit<FeedbackResponse, 'id' | 'ti
       userId: feedback.userId,
     };
     
+    // Create a timeout promise that rejects after 10 seconds
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Request timeout: Feedback submission took too long')), 10000);
+    });
+    
+    const feedbackPromise = api.post('/feedback', backendFeedback);
+    
     const response: AxiosResponse<{
       success: boolean;
       confidence: number;
       timestamp: string;
       feedbackId?: string;
-    }> = await api.post('/feedback', backendFeedback);
+    }> = await Promise.race([feedbackPromise, timeoutPromise]);
     
     // Return the actual response from backend in frontend format
     return {
@@ -229,6 +236,9 @@ export const submitFeedback = async (feedback: Omit<FeedbackResponse, 'id' | 'ti
     };
   } catch (error) {
     console.error('Error submitting feedback:', error);
+    if (error instanceof Error && error.message.includes('timeout')) {
+      throw new Error('Feedback submission timed out. Please try again.');
+    }
     throw error;
   }
 };

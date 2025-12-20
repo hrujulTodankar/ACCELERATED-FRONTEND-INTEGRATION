@@ -51,12 +51,11 @@ class BHIVHealthService {
    * Start periodic health checks every 30 seconds
    */
   private startPeriodicHealthCheck(): void {
-    this.healthCheckInterval = setInterval(async () => {
-      try {
-        await this.getHealthStatus(true); // Silent health check
-      } catch (error) {
+    this.healthCheckInterval = setInterval(() => {
+      // Silent health check - errors are handled internally
+      this.getHealthStatus(true).catch(error => {
         console.warn('Periodic health check failed:', error);
-      }
+      });
     }, this.cacheTimeout);
   }
 
@@ -225,11 +224,9 @@ class BHIVHealthService {
         status: response.data.status || 'running',
       };
     } catch (error) {
-      const responseTime = Date.now() - startTime;
-      
       return {
         success: false,
-        responseTime,
+        responseTime: Date.now() - startTime,
         status: 'unreachable',
       };
     }
@@ -245,16 +242,12 @@ class BHIVHealthService {
         .catch(error => ({ error: error.message, query }))
     );
 
-    try {
-      const results = await Promise.allSettled(promises);
-      return results.map((result, index) => ({
-        query: queries[index],
-        result: result.status === 'fulfilled' ? result.value : { error: 'Failed' },
-      }));
-    } catch (error) {
-      console.error('Batch query failed:', error);
-      throw error;
-    }
+    // Promise.allSettled never rejects, so no try-catch needed
+    const results = await Promise.allSettled(promises);
+    return results.map((result, index) => ({
+      query: queries[index],
+      result: result.status === 'fulfilled' ? result.value : { error: 'Failed' },
+    }));
   }
 
   /**

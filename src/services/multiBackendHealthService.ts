@@ -282,11 +282,11 @@ class MultiBackendHealthService {
       });
 
       const results = await Promise.allSettled(featurePromises);
-      const featureStatus = results.map((result) => {
+      const featureStatus = results.map((result, index) => {
         if (result.status === 'fulfilled') {
           return result.value;
         } else {
-          const backend = this.backends[results.indexOf(result)];
+          const backend = this.backends[index];
           return {
             backend: backend.name,
             features: Object.keys(backend.features).reduce((acc, key) => {

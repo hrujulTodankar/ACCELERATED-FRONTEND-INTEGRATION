@@ -131,7 +131,7 @@ export const useModerationStore = create<ModerationState>()(
         }
       },
 
-      submitFeedback: async (feedback: Omit<FeedbackResponse, 'id' | 'timestamp'>) => {
+      submitFeedback: async (feedback: Omit<FeedbackResponse, 'id' | 'timestamp'> & { itemId?: string }) => {
         try {
           get().setLoading('feedback', true);
           get().setError('feedback');
@@ -162,10 +162,21 @@ export const useModerationStore = create<ModerationState>()(
           
           return;
         } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Failed to submit feedback';
+          let errorMessage = 'Failed to submit feedback';
+          
+          if (error instanceof Error) {
+            if (error.message.includes('timeout')) {
+              errorMessage = 'Feedback submission timed out. Please check your connection and try again.';
+            } else if (error.message.includes('Network Error') || error.message.includes('ECONNREFUSED')) {
+              errorMessage = 'Unable to connect to the server. Please ensure the backend service is running.';
+            } else {
+              errorMessage = error.message;
+            }
+          }
+          
           get().setError('feedback', errorMessage);
           console.error('Error submitting feedback:', error);
-          throw error;
+          throw new Error(errorMessage);
         } finally {
           get().setLoading('feedback', false);
         }

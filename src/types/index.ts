@@ -141,9 +141,10 @@ export interface MetadataPanelProps {
 }
 
 export interface FeedbackBarProps {
-  onFeedback: (feedback: Omit<FeedbackResponse, 'id' | 'timestamp'>) => Promise<void>;
+  onFeedback: (feedback: Omit<FeedbackResponse, 'id' | 'timestamp'> & { itemId?: string }) => Promise<void>;
   currentFeedback?: FeedbackResponse;
   loading?: boolean;
+  itemId?: string;
 }
 
 export interface ConfidenceProgressProps {
@@ -186,7 +187,7 @@ export interface ModerationState {
   setLoading: (key: keyof LoadingState, value: boolean) => void;
   setError: (key: keyof ErrorState, value?: string) => void;
   fetchItems: () => Promise<void>;
-  submitFeedback: (feedback: Omit<FeedbackResponse, 'id' | 'timestamp'>) => Promise<void>;
+  submitFeedback: (feedback: Omit<FeedbackResponse, 'id' | 'timestamp'> & { itemId?: string }) => Promise<void>;
   fetchAnalytics: (id: string) => Promise<AnalyticsResponse>;
   fetchNLPContext: (id: string) => Promise<NLPResponse>;
   fetchTags: (id: string) => Promise<TagResponse>;
