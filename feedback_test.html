@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feedback Submission Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .feedback-form {
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Feedback Submission Test</h1>
+        <p>This test demonstrates the feedback submission functionality with content ID tracking.</p>
+        
+        <div class="feedback-form">
+            <div class="form-group">
+                <label for="contentId">Content ID:</label>
+                <input type="text" id="contentId" placeholder="e.g., 1, 2, 3" value="1">
+            </div>
+            
+            <div class="form-group">
+                <label for="userId">User ID:</label>
+                <input type="text" id="userId" placeholder="e.g., user_123" value="user_123">
+            </div>
+            
+            <div class="form-group">
+                <label for="feedbackType">Feedback Type:</label>
+                <select id="feedbackType">
+                    <option value="approve">Approve Content</option>
+                    <option value="reject">Reject Content</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="comment">Comment (optional):</label>
+                <textarea id="comment" rows="3" placeholder="Add your feedback comment..."></textarea>
+            </div>
+            
+            <button onclick="submitFeedback()">Submit Feedback</button>
+            <button onclick="testFeedbackAPI()">Test Direct API</button>
+            <button onclick="clearResults()">Clear Results</button>
+        </div>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        async function submitFeedback() {
+            const contentId = document.getElementById('contentId').value;
+            const userId = document.getElementById('userId').value;
+            const feedbackType = document.getElementById('feedbackType').value;
+            const comment = document.getElementById('comment').value;
+
+            if (!contentId || !userId) {
+                showResult('error', 'Please fill in Content ID and User ID');
+                return;
+            }
+
+            const feedbackData = {
+                thumbsUp: feedbackType === 'approve',
+                comment: comment.trim() || undefined,
+                userId: userId,
+                itemId: contentId
+            };
+
+            try {
+                showResult('info', 'Submitting feedback...\n' + JSON.stringify(feedbackData, null, 2));
+                
+                // Create timeout controller
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+                
+                const response = await fetch('http://localhost:8001/feedback', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        moderationId: contentId,
+                        feedback: comment.trim() || (feedbackType === 'approve' ? 'Positive feedback' : 'Negative feedback'),
+                        userId: userId,
+                    }),
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showResult('success', `Feedback submitted successfully!\n\nResponse:\n${JSON.stringify(result, null, 2)}`);
+                } else {
+                    showResult('error', `Error: ${response.status}\n\nResponse:\n${JSON.stringify(result, null, 2)}`);
+                }
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    showResult('error', 'Request timed out after 10 seconds. Please check your connection and try again.');
+                } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                    showResult('error', 'Network error: Unable to connect to the server. Please ensure the backend service is running on http://localhost:8001');
+                } else {
+                    showResult('error', `Error: ${error.message}`);
+                }
+            }
+        }
+
+        async function testFeedbackAPI() {
+            const contentId = document.getElementById('contentId').value;
+            const userId = document.getElementById('userId').value;
+            const feedbackType = document.getElementById('feedbackType').value;
+            const comment = document.getElementById('comment').value;
+
+            const testData = {
+                moderationId: contentId || 'mod_123',
+                feedback: comment.trim() || (feedbackType === 'approve' ? 'This content should be approved' : 'This content should be rejected'),
+                userId: userId || 'user_456'
+            };
+
+            try {
+                showResult('info', 'Testing direct API call...\n' + JSON.stringify(testData, null, 2));
+                
+                // Create timeout controller
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+                
+                const response = await fetch('http://localhost:8001/feedback', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(testData),
+                    signal: controller.signal
+                });
+                
+                clearTimeout(timeoutId);
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showResult('success', `API test successful!\n\nResponse:\n${JSON.stringify(result, null, 2)}`);
+                } else {
+                    showResult('error', `API test failed: ${response.status}\n\nResponse:\n${JSON.stringify(result, null, 2)}`);
+                }
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    showResult('error', 'API test timed out after 10 seconds. Please check your connection and try again.');
+                } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+                    showResult('error', 'API test failed - Network error: Unable to connect to the server. Please ensure the backend service is running on http://localhost:8001');
+                } else {
+                    showResult('error', `API test failed - Network error: ${error.message}`);
+                }
+            }
+        }
+
+        function showResult(type, message) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = `<div class="result ${type}">${message}</div>`;
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        // Test the API connection on page load
+        window.onload = async function() {
+            try {
+                const response = await fetch('http://localhost:8001/health');
+                if (response.ok) {
+                    showResult('info', '✅ Backend API is running on http://localhost:8001');
+                } else {
+                    showResult('error', '❌ Backend API is not responding properly');
+                }
+            } catch (error) {
+                showResult('error', '❌ Cannot connect to backend API at http://localhost:8001\nMake sure the BHIV core server is running.');
+            }
+        };
+    </script>
+</body>
+</html>
