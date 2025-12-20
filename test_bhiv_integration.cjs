@@ -133,7 +133,7 @@ async function testBHIVAPI() {
 
   // Test Vedas endpoint
   try {
-    const response = await makeRequest(`${config.apiBaseUrl}/ask-vedas?query=What is wisdom?`);
+    const response = await makeRequest(`${config.apiBaseUrl}/ask-vedas?query=${encodeURIComponent('What is wisdom?')}`);
     logTest('Vedas Endpoint (GET)', response.status === 200);
     
     if (response.data.response) {
@@ -156,7 +156,7 @@ async function testBHIVAPI() {
 
   // Test Wellness endpoint
   try {
-    const response = await makeRequest(`${config.apiBaseUrl}/wellness?query=How to reduce stress&user_id=test_user`);
+    const response = await makeRequest(`${config.apiBaseUrl}/wellness?query=${encodeURIComponent('How to reduce stress')}&user_id=${encodeURIComponent('test_user')}`);
     logTest('Wellness Endpoint (GET)', response.status === 200);
   } catch (error) {
     logTest('Wellness Endpoint (GET)', false, error.message);
@@ -218,7 +218,7 @@ async function testPerformance() {
   log('\n⚡ Testing Performance...', colors.blue);
   
   // Test response times
-  const endpoints = ['/health', '/status', '/ask-vedas?query=test'];
+  const endpoints = ['/health', '/status', `/ask-vedas?query=${encodeURIComponent('test')}`];
   
   for (const endpoint of endpoints) {
     try {
