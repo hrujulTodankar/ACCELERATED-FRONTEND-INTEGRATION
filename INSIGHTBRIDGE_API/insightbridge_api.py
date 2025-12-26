@@ -13,6 +13,8 @@ import uvicorn
 import os
 import sys
 from pathlib import Path
+from datetime import datetime, timezone
+from contextlib import asynccontextmanager
 
 # Add the parent directory to sys.path to import InsightBridge modules
 parent_dir = Path(__file__).parent.parent
@@ -25,7 +27,8 @@ from src.auth.nonce_store import NonceStore
 from src.crypto.hashchain import HashChain
 from src.receiver.receiver import Receiver
 from src.common.utils import ensure_dirs
-from src.common.config import LOG_DIR
+from src.common.config import LOG_DIR, NONCE_MAX_AGE, RECEIVER_BUFFER_SIZE
+from src.common.persistence import PersistenceManager
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -34,7 +37,8 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="InsightBridge Security API",
     description="Security verification and audit API for content moderation",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # Enable CORS
@@ -47,10 +51,64 @@ app.add_middleware(
 )
 
 # Global instances
-nonce_store = NonceStore()
+nonce_store = NonceStore(max_age_seconds=NONCE_MAX_AGE)
 hash_chain = HashChain()
-receiver = Receiver(max_buffer=100)
+receiver = Receiver(max_buffer=RECEIVER_BUFFER_SIZE)
 rsa_keys = {}
+startup_time = None
+persistence_manager = PersistenceManager()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Startup and shutdown event handler"""
+    global startup_time
+    # Startup
+    ensure_dirs()
+    
+    # Load persisted data
+    persisted_data = persistence_manager.load_all()
+    
+    # Load RSA keys
+    global rsa_keys
+    if persisted_data["rsa_keys"]:
+        rsa_keys = persisted_data["rsa_keys"]
+        logger.info("Loaded persisted RSA keys")
+    else:
+        initialize_keys()
+        logger.info("Generated new RSA keys")
+    
+    # Load nonce store
+    global nonce_store
+    if persisted_data["nonce_store"]:
+        nonce_data = persisted_data["nonce_store"]
+        nonce_store.seen = set(nonce_data["seen"])
+        nonce_store.timestamps = nonce_data["timestamps"]
+        logger.info("Loaded persisted nonce store with %d nonces", len(nonce_store.seen))
+    
+    # Load hash chain
+    global hash_chain
+    if persisted_data["hashchain"]:
+        chain_data = persisted_data["hashchain"]
+        hash_chain.chain = chain_data["chain"]
+        logger.info("Loaded persisted hash chain with %d entries", len(hash_chain.chain))
+    
+    # Load receiver buffer
+    global receiver
+    if persisted_data["receiver_buffer"]:
+        buffer_data = persisted_data["receiver_buffer"]
+        receiver.buffer = buffer_data["buffer"]
+        receiver.max_buffer = buffer_data["max_buffer"]
+        logger.info("Loaded persisted receiver buffer with %d messages", len(receiver.buffer))
+    
+    startup_time = datetime.now(timezone.utc)
+    logger.info("InsightBridge API started successfully")
+    
+    yield
+    
+    # Shutdown - save all data
+    logger.info("Saving persisted data before shutdown...")
+    persistence_manager.save_all(rsa_keys, nonce_store, hash_chain, receiver)
+    logger.info("InsightBridge API shutting down")
 
 class SignatureRequest(BaseModel):
     message: str = Field(..., description="Message to sign")
@@ -76,7 +134,6 @@ class HashChainEntry(BaseModel):
 
 class MessageRequest(BaseModel):
     message: Dict[str, Any] = Field(..., description="Message to receive")
-    corrupt: Optional[bool] = Field(False, description="Simulate corruption")
 
 class HealthResponse(BaseModel):
     status: str
@@ -137,13 +194,6 @@ def initialize_keys():
     }
     logger.info("RSA keys initialized")
 
-@app.on_event("startup")
-async def startup_event():
-    """Initialize the service"""
-    ensure_dirs()
-    initialize_keys()
-    logger.info("InsightBridge API started successfully")
-
 @app.get("/", response_model=Dict[str, str])
 async def root():
     """Health check endpoint"""
@@ -151,15 +201,19 @@ async def root():
         "service": "InsightBridge Security API",
         "version": "1.0.0",
         "status": "running",
-        "timestamp": "2025-12-19T08:02:41Z"
+        "timestamp": datetime.now(timezone.utc).isoformat()
     }
 
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     """Health check with detailed status"""
+    uptime_seconds = 0
+    if startup_time:
+        uptime_seconds = int((datetime.now(timezone.utc) - startup_time).total_seconds())
+    
     return HealthResponse(
         status="healthy",
-        timestamp="2025-12-19T08:02:41Z",
+        timestamp=datetime.now(timezone.utc).isoformat(),
         services={
             "signature": "active",
             "jwt": "active", 
@@ -167,7 +221,7 @@ async def health_check():
             "hashchain": "active",
             "receiver": "active"
         },
-        uptime_seconds=0
+        uptime_seconds=uptime_seconds
     )
 
 @app.post("/signature/sign", response_model=SignatureResponse)
@@ -230,7 +284,13 @@ async def create_jwt_token(request: JWTRequest):
         import base64
         import json
         parts = token.split('.')
-        payload_bytes = base64.b64decode(parts[1] + '==')  # Add padding
+        # Properly handle Base64 URL-safe encoding padding
+        payload_b64 = parts[1]
+        # Add padding if needed
+        padding_needed = len(payload_b64) % 4
+        if padding_needed:
+            payload_b64 += '=' * (4 - padding_needed)
+        payload_bytes = base64.b64decode(payload_b64)
         payload = json.loads(payload_bytes.decode('utf-8'))
         
         return JWTResponse(
