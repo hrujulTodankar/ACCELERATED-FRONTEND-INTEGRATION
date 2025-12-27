@@ -3,27 +3,18 @@ import { AlertTriangle, ThumbsUp, ThumbsDown, Clock, CheckCircle, XCircle } from
 import StatusBadge from './StatusBadge';
 import ConfidenceProgressBar from './ConfidenceProgressBar';
 import FeedbackBar from './FeedbackBar';
-
-interface ContentItem {
-  id: string;
-  type: string;
-  content: string;
-  decision: 'approved' | 'rejected' | 'pending';
-  confidence: number;
-  flagged: boolean;
-  timestamp: string;
-  rewardStatus?: string;
-  statusBadge?: { type: string; timestamp: string; };
-}
+import RLRewardPanel from './RLRewardPanel';
+import { ModerationResponse } from '../types';
 
 interface ModerationCardProps {
-  content: ContentItem;
-  onFeedback: (contentId: string, feedback: any) => void;
+  content: ModerationResponse;
+  onFeedback: (feedback: any) => Promise<void>;
   loading?: boolean;
   onClick?: () => void;
+  showRLPanel?: boolean;
 }
 
-const ModerationCard: React.FC<ModerationCardProps> = ({ content, onFeedback, loading = false, onClick }) => {
+const ModerationCard: React.FC<ModerationCardProps> = ({ content, onFeedback, loading = false, onClick, showRLPanel = true }) => {
   const getDecisionBadge = () => {
     switch (content.decision) {
       case 'approved':
@@ -94,8 +85,19 @@ const ModerationCard: React.FC<ModerationCardProps> = ({ content, onFeedback, lo
 
       {/* Actions */}
       <div className="border-t pt-4">
-        <FeedbackBar contentId={content.id} onFeedback={onFeedback} loading={loading} />
+        <FeedbackBar contentId={content.id} onFeedback={(contentId, feedback) => onFeedback({ ...feedback, itemId: contentId })} loading={loading} />
       </div>
+
+      {/* RL Reward Panel */}
+      {showRLPanel && content.rlMetrics && (
+        <div className="mt-4 pt-4 border-t">
+          <RLRewardPanel
+            rewardHistory={content.rlMetrics.rewardHistory}
+            currentScore={content.rlMetrics.confidenceScore}
+            isUpdating={loading}
+          />
+        </div>
+      )}
 
       {/* Status Badge */}
       {content.statusBadge && (

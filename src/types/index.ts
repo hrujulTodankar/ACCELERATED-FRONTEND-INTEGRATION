@@ -16,6 +16,20 @@ export interface ModerationResponse {
   statusBadge?: StatusBadge;
   lastUpdated?: string;
   rewardStatus?: 'awaiting' | 'received';
+  // RL integration
+  rlMetrics?: RLMetrics;
+}
+
+export interface RLMetrics {
+  confidenceScore: number;
+  rewardHistory: RLReward[];
+  lastReward: string;
+}
+
+export interface RLReward {
+  timestamp: string;
+  reward: number;
+  action?: 'approve' | 'reject' | 'pending';
 }
 
 export interface FeedbackResponse {
@@ -193,4 +207,5 @@ export interface ModerationState {
   fetchTags: (id: string) => Promise<TagResponse>;
   updateItemStatus: (id: string, statusBadge: StatusBadge, rewardStatus?: 'awaiting' | 'received') => void;
   simulateRLUpdate: (id: string) => void;
+  processRLReward: (id: string, action: 'approve' | 'reject' | 'pending') => Promise<any>;
 }

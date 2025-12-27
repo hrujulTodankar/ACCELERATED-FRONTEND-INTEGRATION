@@ -341,13 +341,13 @@ export const useModerationStore = create<ModerationState>()(
         );
       },
 
-      // Simulate RL confidence updates (for demonstration)
+      // Enhanced RL confidence updates with reward calculation
       simulateRLUpdate: (id: string) => {
         const currentItem = get().items.find(item => item.id === id);
         if (currentItem) {
-          // Simulate confidence change
-          const confidenceChange = (Math.random() - 0.5) * 0.1; // ±5% change
-          const newConfidence = Math.max(0, Math.min(1, currentItem.confidence + confidenceChange));
+          // Simulate more realistic RL confidence change
+          const rewardChange = (Math.random() - 0.3) * 0.15; // Biased towards positive rewards
+          const newConfidence = Math.max(0.1, Math.min(1.0, currentItem.confidence + rewardChange));
           
           const updatedItem = {
             ...currentItem,
@@ -356,8 +356,20 @@ export const useModerationStore = create<ModerationState>()(
             statusBadge: {
               type: 'updated' as const,
               timestamp: new Date().toISOString(),
-              message: 'RL confidence updated',
+              message: rewardChange > 0 ? 'Positive RL reward applied' : 'RL adjustment applied',
             },
+            rlMetrics: {
+              confidenceScore: newConfidence,
+              rewardHistory: [
+                ...(currentItem.rlMetrics?.rewardHistory || []),
+                {
+                  timestamp: new Date().toISOString(),
+                  reward: rewardChange,
+                  action: (rewardChange > 0.05 ? 'approve' : rewardChange < -0.05 ? 'reject' : 'pending') as 'approve' | 'reject' | 'pending'
+                }
+              ].slice(-10), // Keep last 10 rewards
+              lastReward: new Date().toISOString()
+            }
           };
 
           set(
@@ -368,6 +380,56 @@ export const useModerationStore = create<ModerationState>()(
             false,
             'simulateRLUpdate'
           );
+        }
+      },
+
+      // Process RL reward from backend feedback
+      processRLReward: async (id: string, action: 'approve' | 'reject' | 'pending') => {
+        try {
+          const { simulateRLReward } = await import('../services/apiService');
+          const reward = await simulateRLReward(id, action);
+          
+          // Update item with new reward data
+          const currentItem = get().items.find(item => item.id === id);
+          if (currentItem) {
+            const updatedItem = {
+              ...currentItem,
+              confidence: Math.max(0.1, Math.min(1.0, currentItem.confidence + reward.confidenceUpdate || 0)),
+              lastUpdated: new Date().toISOString(),
+              statusBadge: {
+                type: 'updated' as const,
+                timestamp: new Date().toISOString(),
+                message: `RL reward: +${((reward.reward || 0) * 100).toFixed(1)}%`,
+              },
+              rewardStatus: 'received' as const,
+              rlMetrics: {
+                confidenceScore: Math.max(0.1, Math.min(1.0, currentItem.confidence + reward.confidenceUpdate || 0)),
+                rewardHistory: [
+                  ...(currentItem.rlMetrics?.rewardHistory || []),
+                  {
+                    timestamp: new Date().toISOString(),
+                    reward: reward.reward || 0,
+                    action
+                  }
+                ].slice(-10),
+                lastReward: new Date().toISOString()
+              }
+            };
+
+            set(
+              {
+                items: get().items.map(item => item.id === id ? updatedItem : item),
+                selectedItem: get().selectedItem?.id === id ? updatedItem : get().selectedItem,
+              },
+              false,
+              'processRLReward'
+            );
+          }
+          
+          return reward;
+        } catch (error) {
+          console.error('Error processing RL reward:', error);
+          throw error;
         }
       },
     }),

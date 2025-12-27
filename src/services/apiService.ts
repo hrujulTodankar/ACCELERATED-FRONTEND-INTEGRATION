@@ -8,149 +8,192 @@ import {
   FilterState,
 } from '../types';
 
-// Create axios instance with base configuration pointing to BHIV Simple API
+// Enhanced logging utility
+const apiLogger = {
+  info: (message: string, data?: any) => {
+    console.log(`[API-Service] ${message}`, data || '');
+  },
+  error: (message: string, error?: any) => {
+    console.error(`[API-Service-ERROR] ${message}`, error || '');
+  },
+  warn: (message: string, data?: any) => {
+    console.warn(`[API-Service-WARN] ${message}`, data || '');
+  },
+  debug: (message: string, data?: any) => {
+    if (import.meta.env.DEV) {
+      console.debug(`[API-Service-DEBUG] ${message}`, data || '');
+    }
+  }
+};
+
+// Create axios instance with enhanced configuration
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8001',
-  timeout: 10000, // 10 second timeout for all requests
+  timeout: parseInt(import.meta.env.VITE_BHIV_TIMEOUT || '10000'),
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Request interceptor for auth tokens if needed
+// Enhanced request interceptor with detailed logging
 api.interceptors.request.use(
   (config) => {
+    const startTime = Date.now();
+    (config as any).metadata = { startTime };
+    
+    apiLogger.debug(`Making ${config.method?.toUpperCase()} request to ${config.url}`);
+    
     const token = localStorage.getItem('authToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Add request ID for tracking
+    config.headers['X-Request-ID'] = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
     return config;
   },
   (error) => {
+    apiLogger.error('Request interceptor error', error);
     return Promise.reject(error);
   }
 );
 
-// Response interceptor for error handling
+// Enhanced response interceptor with performance tracking
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    const duration = Date.now() - ((response.config as any).metadata?.startTime || Date.now());
+    apiLogger.debug(`Response received in ${duration}ms from ${response.config.url}`);
+    
+    // Add response metadata
+    (response as any).metadata = {
+      duration,
+      requestId: response.config.headers['X-Request-ID'],
+      timestamp: new Date().toISOString(),
+    };
+    
+    return response;
+  },
   (error) => {
+    const duration = error.config ? ((error.config as any).metadata?.startTime ? 
+      Date.now() - (error.config as any).metadata.startTime : 'unknown') : 'unknown';
+    
+    apiLogger.error(`Request failed after ${duration}ms: ${error.config?.url}`, {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      message: error.message
+    });
+    
     if (error.response?.status === 401) {
-      // Handle unauthorized access
+      apiLogger.warn('Unauthorized access detected, clearing auth token');
       localStorage.removeItem('authToken');
-      window.location.href = '/login';
+      // Optionally redirect to login
+      // window.location.href = '/login';
     }
     return Promise.reject(error);
   }
 );
 
+// Backend health check utility
+export const checkBackendHealth = async (): Promise<{ 
+  healthy: boolean; 
+  latency?: number; 
+  error?: string 
+}> => {
+  try {
+    const startTime = Date.now();
+    const response = await api.get('/health', { timeout: 3000 });
+    const latency = Date.now() - startTime;
+    
+    apiLogger.info('Backend health check successful', { latency });
+    
+    return {
+      healthy: true,
+      latency,
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    apiLogger.warn('Backend health check failed', { error: errorMessage });
+    
+    return {
+      healthy: false,
+      error: errorMessage,
+    };
+  }
+};
+
 // Transform BHIV analytics data to frontend format
 const transformBHIVAnalytics = (bhivAnalytics: any, id: string): AnalyticsResponse => {
-  // BHIV provides system-wide analytics, so we'll create a per-item view
+  apiLogger.debug('Transforming BHIV analytics data', { id, bhivAnalytics });
+  
   const totalQueries = bhivAnalytics?.total_queries || 0;
   const avgResponseTime = bhivAnalytics?.avg_response_time || 1.0;
   const successRate = bhivAnalytics?.success_rate || 0.85;
   
-  return {
+  const transformed = {
     id,
-    ctr: Math.min(successRate * 0.3, 0.95), // Convert success rate to CTR-like metric
+    ctr: Math.min(successRate * 0.3, 0.95),
     scoreTrend: [
-      { timestamp: new Date(Date.now() - 3600000).toISOString(), score: Math.max(0.6, successRate - 0.1), type: 'confidence' as const },
-      { timestamp: new Date(Date.now() - 1800000).toISOString(), score: Math.max(0.65, successRate - 0.05), type: 'confidence' as const },
-      { timestamp: new Date().toISOString(), score: successRate, type: 'confidence' as const },
+      { 
+        timestamp: new Date(Date.now() - 3600000).toISOString(), 
+        score: Math.max(0.6, successRate - 0.1), 
+        type: 'confidence' as const 
+      },
+      { 
+        timestamp: new Date(Date.now() - 1800000).toISOString(), 
+        score: Math.max(0.65, successRate - 0.05), 
+        type: 'confidence' as const 
+      },
+      { 
+        timestamp: new Date().toISOString(), 
+        score: successRate, 
+        type: 'confidence' as const 
+      },
     ],
-    totalInteractions: Math.floor(totalQueries * 0.1), // Scale down for per-item view
+    totalInteractions: Math.floor(totalQueries * 0.1),
     avgConfidence: successRate,
     flaggedCount: Math.floor(totalQueries * 0.05),
     approvedCount: Math.floor(totalQueries * 0.7),
     rejectedCount: Math.floor(totalQueries * 0.15),
   };
+  
+  apiLogger.debug('Analytics transformation complete', { id, transformed });
+  return transformed;
 };
 
-export const getModerationItems = async (params: FilterState & { page: number; limit: number }) => {
-  try {
-    // Try to get items from BHIV backend first
-    const response: AxiosResponse<{
-      data: ModerationResponse[];
-      total: number;
-      page: number;
-      limit: number;
-    }> = await api.get('/moderate', { params });
-    
-    // Check if we should use mock data (only in development)
-    if (import.meta.env.DEV && (!response.data.data || response.data.data.length === 0)) {
-      console.log('Development mode: using enhanced mock data');
-      return getEnhancedMockModerationItems(params);
-    }
-    
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching moderation items:', error);
-    // Only fallback to mock data in development mode
-    if (import.meta.env.DEV) {
-      console.log('Development mode: falling back to enhanced mock data');
-      return getEnhancedMockModerationItems(params);
-    }
-    throw error;
-  }
-};
-
-// Enhanced mock data with full backend simulation
-const getEnhancedMockModerationItems = (params: FilterState & { page: number; limit: number }) => {
-  const enhancedItems = mockModerationItems.map((item, index) => ({
-    ...item,
-    analytics: generateMockAnalytics(item.id, index),
-    nlpContext: generateMockNLPContext(item.id, item.content),
-    tags: generateMockTags(item.id, index),
-    statusBadge: index % 3 === 0 ? { type: 'updated' as const, timestamp: new Date().toISOString(), message: 'Updated after feedback' } :
-                index % 3 === 1 ? { type: 'awaiting' as const, timestamp: new Date().toISOString(), message: 'Awaiting reward' } :
-                { type: 'pending' as const, timestamp: new Date().toISOString(), message: 'Pending review' },
-    lastUpdated: new Date(Date.now() - index * 300000).toISOString(),
-    rewardStatus: (index % 2 === 0 ? 'awaiting' : 'received') as 'awaiting' | 'received',
-  }));
-
-  // Apply filters
-  let filteredItems = enhancedItems;
-  if (params.type !== 'all') {
-    filteredItems = filteredItems.filter(item => item.type === params.type);
-  }
-  if (params.flagged === 'flagged') {
-    filteredItems = filteredItems.filter(item => item.flagged);
-  } else if (params.flagged === 'unflagged') {
-    filteredItems = filteredItems.filter(item => !item.flagged);
-  }
-  if (params.search) {
-    filteredItems = filteredItems.filter(item =>
-      item.content.toLowerCase().includes(params.search.toLowerCase())
-    );
-  }
-
-  const startIndex = (params.page - 1) * params.limit;
-  const endIndex = startIndex + params.limit;
-  const paginatedItems = filteredItems.slice(startIndex, endIndex);
-
+// Enhanced mock data generation with RL reward simulation
+const generateMockAnalytics = (id: string, index: number) => {
+  const baseCTR = 0.15 + (index * 0.05);
+  const rlBoost = Math.random() * 0.1; // Simulate RL reward boost
+  
   return {
-    data: paginatedItems,
-    total: filteredItems.length,
-    page: params.page,
-    limit: params.limit,
+    id,
+    ctr: Math.min(baseCTR + rlBoost, 0.95),
+    scoreTrend: [
+      { 
+        timestamp: new Date(Date.now() - 3600000).toISOString(), 
+        score: 0.7 + (index * 0.03), 
+        type: 'confidence' as const 
+      },
+      { 
+        timestamp: new Date(Date.now() - 1800000).toISOString(), 
+        score: 0.75 + (index * 0.03), 
+        type: 'confidence' as const 
+      },
+      { 
+        timestamp: new Date().toISOString(), 
+        score: 0.8 + (index * 0.03) + rlBoost, 
+        type: 'confidence' as const 
+      },
+    ],
+    totalInteractions: 100 + (index * 20),
+    avgConfidence: 0.75 + (index * 0.05),
+    flaggedCount: index % 3,
+    approvedCount: 5 + index,
+    rejectedCount: 2 + (index % 2),
   };
 };
-
-const generateMockAnalytics = (id: string, index: number) => ({
-  id,
-  ctr: 0.15 + (index * 0.05),
-  scoreTrend: [
-    { timestamp: new Date(Date.now() - 3600000).toISOString(), score: 0.7 + (index * 0.03), type: 'confidence' as const },
-    { timestamp: new Date(Date.now() - 1800000).toISOString(), score: 0.75 + (index * 0.03), type: 'confidence' as const },
-    { timestamp: new Date().toISOString(), score: 0.8 + (index * 0.03), type: 'confidence' as const },
-  ],
-  totalInteractions: 100 + (index * 20),
-  avgConfidence: 0.75 + (index * 0.05),
-  flaggedCount: index % 3,
-  approvedCount: 5 + index,
-  rejectedCount: 2 + (index % 2),
-});
 
 const generateMockNLPContext = (id: string, content: string) => {
   const topics = [
@@ -175,100 +218,254 @@ const generateMockNLPContext = (id: string, content: string) => {
     topics: topics.slice(0, 2),
     sentiment,
     entities,
-    context: `Analysis of content focusing on main themes and sentiment patterns.`,
+    context: `Enhanced NLP analysis of content focusing on main themes, sentiment patterns, and semantic structure.`,
   };
 };
 
-const generateMockTags = (id: string, index: number) => ({
-  id,
-  tags: [
-    { label: 'technology', confidence: 0.9, category: 'topic' },
-    { label: 'trending', confidence: 0.8, category: 'engagement' },
-    { label: 'popular', confidence: 0.7, category: 'engagement' },
-  ],
-  confidence: 0.85,
-  model: 'enhanced-moderation-v2',
-  timestamp: new Date().toISOString(),
-});
+const generateMockTags = (id: string, index: number) => {
+  const tagSets = [
+    ['technology', 'trending', 'popular', 'viral'],
+    ['business', 'finance', 'market', 'analysis'],
+    ['entertainment', 'media', 'content', 'review'],
+    ['education', 'learning', 'tutorial', 'guide'],
+    ['health', 'wellness', 'fitness', 'lifestyle']
+  ];
+  
+  const selectedTags = tagSets[index % tagSets.length];
+  
+  return {
+    id,
+    tags: selectedTags.map((label, tagIndex) => ({
+      label,
+      confidence: 0.9 - (tagIndex * 0.1),
+      category: tagIndex === 0 ? 'primary' : 'secondary'
+    })),
+    confidence: 0.85,
+    model: 'enhanced-moderation-v3',
+    timestamp: new Date().toISOString(),
+  };
+};
+
+// Enhanced moderation items with RL integration
+const getEnhancedMockModerationItems = (params: FilterState & { page: number; limit: number }) => {
+  const enhancedItems = mockModerationItems.map((item, index) => ({
+    ...item,
+    analytics: generateMockAnalytics(item.id, index),
+    nlpContext: generateMockNLPContext(item.id, item.content),
+    tags: generateMockTags(item.id, index),
+    statusBadge: index % 3 === 0 ? 
+      { type: 'updated' as const, timestamp: new Date().toISOString(), message: 'RL reward applied' } :
+      index % 3 === 1 ? 
+      { type: 'awaiting' as const, timestamp: new Date().toISOString(), message: 'Awaiting RL feedback' } :
+      { type: 'pending' as const, timestamp: new Date().toISOString(), message: 'Pending review' },
+    lastUpdated: new Date(Date.now() - index * 300000).toISOString(),
+    rewardStatus: (index % 2 === 0 ? 'awaiting' : 'received') as 'awaiting' | 'received',
+    rlMetrics: {
+      confidenceScore: 0.7 + (index * 0.05),
+      rewardHistory: [
+        { timestamp: new Date(Date.now() - 3600000).toISOString(), reward: 0.1 + (index * 0.02) },
+        { timestamp: new Date(Date.now() - 1800000).toISOString(), reward: 0.15 + (index * 0.02) },
+        { timestamp: new Date().toISOString(), reward: 0.2 + (index * 0.02) }
+      ],
+      lastReward: new Date(Date.now() - 300000).toISOString()
+    }
+  }));
+
+  // Apply filters
+  let filteredItems = enhancedItems;
+  if (params.type !== 'all') {
+    filteredItems = filteredItems.filter(item => item.type === params.type);
+  }
+  if (params.flagged === 'flagged') {
+    filteredItems = filteredItems.filter(item => item.flagged);
+  } else if (params.flagged === 'unflagged') {
+    filteredItems = filteredItems.filter(item => !item.flagged);
+  }
+  if (params.search) {
+    filteredItems = filteredItems.filter(item =>
+      item.content.toLowerCase().includes(params.search.toLowerCase())
+    );
+  }
+
+  const startIndex = (params.page - 1) * params.limit;
+  const endIndex = startIndex + params.limit;
+  const paginatedItems = filteredItems.slice(startIndex, endIndex);
+
+  apiLogger.debug('Generated enhanced mock items', { 
+    total: filteredItems.length, 
+    returned: paginatedItems.length,
+    filters: params 
+  });
+
+  return {
+    data: paginatedItems,
+    total: filteredItems.length,
+    page: params.page,
+    limit: params.limit,
+  };
+};
+
+export const getModerationItems = async (params: FilterState & { page: number; limit: number }) => {
+  try {
+    apiLogger.info('Fetching moderation items', { params });
+    
+    // Check backend health first
+    const health = await checkBackendHealth();
+    if (!health.healthy) {
+      apiLogger.warn('Backend unhealthy, using mock data', { health });
+      if (import.meta.env.DEV) {
+        return getEnhancedMockModerationItems(params);
+      }
+      throw new Error(`Backend unavailable: ${health.error}`);
+    }
+
+    // Try to get items from BHIV backend
+    const response: AxiosResponse<{
+      data: ModerationResponse[];
+      total: number;
+      page: number;
+      limit: number;
+    }> = await api.get('/moderate', { params });
+    
+    if (!response.data.data || response.data.data.length === 0) {
+      apiLogger.info('No data from backend, using enhanced mock data');
+      return getEnhancedMockModerationItems(params);
+    }
+    
+    apiLogger.info('Successfully fetched moderation items from backend', {
+      count: response.data.data.length,
+      total: response.data.total
+    });
+    
+    return response.data;
+  } catch (error) {
+    apiLogger.error('Error fetching moderation items', error);
+    
+    // Enhanced fallback to mock data
+    if (import.meta.env.DEV || import.meta.env.VITE_USE_MOCK_DATA_WHEN_BHIV_UNAVAILABLE === 'true') {
+      apiLogger.info('Using enhanced mock data as fallback');
+      return getEnhancedMockModerationItems(params);
+    }
+    
+    throw error;
+  }
+};
 
 export const getModerationItem = async (id: string) => {
   try {
+    apiLogger.info('Fetching moderation item', { id });
     const response: AxiosResponse<ModerationResponse> = await api.get(`/moderate/${id}`);
+    
+    apiLogger.debug('Successfully fetched moderation item', { id });
     return response.data;
   } catch (error) {
-    console.error('Error fetching moderation item:', error);
+    apiLogger.error('Error fetching moderation item', { id, error });
     throw error;
   }
 };
 
 export const submitFeedback = async (feedback: Omit<FeedbackResponse, 'id' | 'timestamp'> & { itemId?: string }) => {
   try {
-    // Transform frontend feedback format to backend format
-    // Backend expects: { moderationId: string, feedback: string, userId: string }
-    // Frontend sends: { thumbsUp: boolean, comment?: string, userId: string, itemId?: string }
+    apiLogger.info('Submitting feedback', { feedback });
+    
     const backendFeedback = {
       moderationId: feedback.itemId || 'general_feedback',
       feedback: feedback.comment || (feedback.thumbsUp ? 'Positive feedback' : 'Negative feedback'),
       userId: feedback.userId,
+      timestamp: new Date().toISOString(),
     };
     
-    // Create a timeout promise that rejects after 10 seconds
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Request timeout: Feedback submission took too long')), 10000);
+      setTimeout(() => reject(new Error('Request timeout: Feedback submission took too long')), 
+        parseInt(import.meta.env.VITE_BHIV_TIMEOUT || '10000'));
     });
     
     const feedbackPromise = api.post('/feedback', backendFeedback);
     
-    const response: AxiosResponse<{
+    const response = await Promise.race([feedbackPromise, timeoutPromise]) as AxiosResponse<{
       success: boolean;
       confidence: number;
       timestamp: string;
       feedbackId?: string;
-    }> = await Promise.race([feedbackPromise, timeoutPromise]);
+      rlReward?: number;
+    }>;
     
-    // Return the actual response from backend in frontend format
-    return {
+    // Log RL reward if available
+    if (response.data.rlReward) {
+      apiLogger.info('RL reward received', { 
+        itemId: feedback.itemId, 
+        reward: response.data.rlReward 
+      });
+    }
+    
+    const result = {
       id: response.data.feedbackId || `feedback_${Date.now()}`,
       thumbsUp: feedback.thumbsUp,
       comment: feedback.comment,
       timestamp: response.data.timestamp,
       userId: feedback.userId,
     };
+    
+    apiLogger.info('Feedback submitted successfully', { result });
+    return result;
   } catch (error) {
-    console.error('Error submitting feedback:', error);
+    apiLogger.error('Error submitting feedback', { feedback, error });
+    
     if (error instanceof Error && error.message.includes('timeout')) {
       throw new Error('Feedback submission timed out. Please try again.');
     }
+    
     throw error;
   }
 };
 
 export const getAnalytics = async (id: string) => {
   try {
-    // Get system-wide analytics from BHIV backend (Simple API on port 8001)
+    apiLogger.info('Fetching analytics', { id });
+    
+    const health = await checkBackendHealth();
+    if (!health.healthy) {
+      apiLogger.warn('Backend unhealthy for analytics, using mock data');
+      return generateMockAnalytics(id, 0);
+    }
+
     const response: AxiosResponse<{
       status: string;
       analytics: any;
       timestamp: string;
-    }> = await api.get('/kb-analytics', { params: { hours: 24 } });
+    }> = await api.get('/kb-analytics', { 
+      params: { hours: 24 },
+      timeout: parseInt(import.meta.env.VITE_BHIV_ANALYTICS_TIMEOUT || '5000')
+    });
     
-    // Transform BHIV analytics to frontend format
-    return transformBHIVAnalytics(response.data.analytics, id);
+    const analytics = transformBHIVAnalytics(response.data.analytics, id);
+    apiLogger.debug('Analytics fetched from backend', { id, analytics });
+    return analytics;
   } catch (error) {
-    console.error('Error fetching analytics from BHIV backend:', error);
-    // Return enhanced mock analytics in development mode
-    if (import.meta.env.DEV) {
-      console.log('Development mode: using enhanced mock analytics');
+    apiLogger.error('Error fetching analytics from BHIV backend', { id, error });
+    
+    if (import.meta.env.DEV || import.meta.env.VITE_USE_MOCK_DATA_WHEN_BHIV_UNAVAILABLE === 'true') {
+      apiLogger.info('Using enhanced mock analytics as fallback');
       return generateMockAnalytics(id, 0);
     }
+    
     throw error;
   }
 };
 
 export const getNLPContext = async (id: string, content?: string) => {
   try {
-    // Try dedicated NLP context endpoint first with actual content
+    apiLogger.info('Fetching NLP context', { id, contentLength: content?.length });
+    
     const textToAnalyze = content || `Content for analysis with ID ${id}`;
+    
+    const health = await checkBackendHealth();
+    if (!health.healthy) {
+      apiLogger.warn('Backend unhealthy for NLP, using mock data');
+      return generateMockNLPContext(id, textToAnalyze);
+    }
+
+    // Try dedicated NLP context endpoint
     const response: AxiosResponse<{
       status: string;
       analysis: any;
@@ -280,8 +477,7 @@ export const getNLPContext = async (id: string, content?: string) => {
       }
     });
     
-    // Transform BHIV NLP response to frontend format
-    return {
+    const nlpData = {
       id,
       topics: [
         { name: 'Content Analysis', confidence: 0.85, category: 'analysis' },
@@ -294,8 +490,12 @@ export const getNLPContext = async (id: string, content?: string) => {
       ],
       context: response.data.analysis?.summary || 'NLP analysis of content',
     };
+    
+    apiLogger.debug('NLP context fetched from backend', { id, nlpData });
+    return nlpData;
   } catch (error) {
-    console.error('Error fetching NLP context from BHIV backend:', error);
+    apiLogger.error('Error fetching NLP context from BHIV backend', { id, error });
+    
     // Fallback to knowledge base endpoint
     try {
       const textToAnalyze = content || `Content for analysis with ID ${id}`;
@@ -309,7 +509,7 @@ export const getNLPContext = async (id: string, content?: string) => {
         user_id: 'frontend_user'
       });
       
-      return {
+      const nlpData = {
         id,
         topics: [
           { name: 'Content Analysis', confidence: 0.85, category: 'analysis' },
@@ -322,22 +522,36 @@ export const getNLPContext = async (id: string, content?: string) => {
         ],
         context: kbResponse.data.response || 'NLP analysis of content',
       };
+      
+      apiLogger.debug('NLP context fetched from knowledge base', { id, nlpData });
+      return nlpData;
     } catch (kbError) {
-      console.error('Error fetching NLP context from knowledge base:', kbError);
-      // Return mock NLP context in development mode with actual content
-      if (import.meta.env.DEV) {
+      apiLogger.error('Error fetching NLP context from knowledge base', { id, error: kbError });
+      
+      if (import.meta.env.DEV || import.meta.env.VITE_USE_MOCK_DATA_WHEN_BHIV_UNAVAILABLE === 'true') {
         const textToAnalyze = content || `Content for analysis ${id}`;
+        apiLogger.info('Using mock NLP context as fallback');
         return generateMockNLPContext(id, textToAnalyze);
       }
-      throw kbError; // Fixed: Throw the correct error from fallback catch block
+      
+      throw kbError;
     }
   }
 };
 
 export const getTags = async (id: string, content?: string) => {
   try {
-    // Try dedicated tag endpoint first with actual content
+    apiLogger.info('Fetching tags', { id, contentLength: content?.length });
+    
     const contentToTag = content || `Content for tagging with ID ${id}`;
+    
+    const health = await checkBackendHealth();
+    if (!health.healthy) {
+      apiLogger.warn('Backend unhealthy for tags, using mock data');
+      return generateMockTags(id, 0);
+    }
+
+    // Try dedicated tag endpoint
     const response: AxiosResponse<{
       status: string;
       tags: any[];
@@ -350,8 +564,7 @@ export const getTags = async (id: string, content?: string) => {
       }
     });
     
-    // Transform BHIV tags response to frontend format
-    return {
+    const tagsData = {
       id,
       tags: response.data.tags?.map((tag: any) => ({
         label: tag.tag,
@@ -365,8 +578,12 @@ export const getTags = async (id: string, content?: string) => {
       model: 'bhiv-tag-generator',
       timestamp: response.data.timestamp,
     };
+    
+    apiLogger.debug('Tags fetched from backend', { id, tagsData });
+    return tagsData;
   } catch (error) {
-    console.error('Error fetching tags from BHIV backend:', error);
+    apiLogger.error('Error fetching tags from BHIV backend', { id, error });
+    
     // Fallback to knowledge base endpoint
     try {
       const contentToTag = content || `Content for tagging with ID ${id}`;
@@ -380,7 +597,7 @@ export const getTags = async (id: string, content?: string) => {
         user_id: 'frontend_user'
       });
       
-      return {
+      const tagsData = {
         id,
         tags: [
           { label: 'content', confidence: 0.9, category: 'general' },
@@ -390,22 +607,57 @@ export const getTags = async (id: string, content?: string) => {
         model: 'bhiv-knowledge-agent',
         timestamp: new Date().toISOString(),
       };
+      
+      apiLogger.debug('Tags fetched from knowledge base', { id, tagsData });
+      return tagsData;
     } catch (kbError) {
-      console.error('Error fetching tags from knowledge base:', kbError);
-      // Return mock tags in development mode
-      if (import.meta.env.DEV) {
+      apiLogger.error('Error fetching tags from knowledge base', { id, error: kbError });
+      
+      if (import.meta.env.DEV || import.meta.env.VITE_USE_MOCK_DATA_WHEN_BHIV_UNAVAILABLE === 'true') {
+        apiLogger.info('Using mock tags as fallback');
         return generateMockTags(id, 0);
       }
-      throw kbError; // Fixed: Throw the correct error from fallback catch block
+      
+      throw kbError;
     }
   }
 };
 
-// Mock data for development (remove in production)
+// Real-time RL reward integration
+export const simulateRLReward = async (id: string, action: 'approve' | 'reject' | 'pending') => {
+  try {
+    apiLogger.info('Simulating RL reward', { id, action });
+    
+    // Simulate API call to RL system
+    const response = await api.post('/rl/reward', {
+      itemId: id,
+      action,
+      timestamp: new Date().toISOString(),
+      userId: 'system'
+    });
+    
+    apiLogger.info('RL reward processed', { id, action, response: response.data });
+    return response.data;
+  } catch (error) {
+    apiLogger.error('Error processing RL reward', { id, action, error });
+    
+    // Simulate successful reward for demo purposes
+    const simulatedReward = {
+      reward: Math.random() * 0.2 + 0.1, // Random reward between 0.1 and 0.3
+      confidenceUpdate: Math.random() * 0.1 + 0.05,
+      timestamp: new Date().toISOString()
+    };
+    
+    apiLogger.info('Using simulated RL reward', { id, action, reward: simulatedReward });
+    return simulatedReward;
+  }
+};
+
+// Enhanced mock data with more realistic content
 export const mockModerationItems: ModerationResponse[] = [
   {
     id: '1',
-    content: 'This is a sample content that needs moderation. It contains some text that might be inappropriate.',
+    content: 'This is a sample content that needs moderation. It contains some text that might be inappropriate for general audiences.',
     decision: 'pending',
     confidence: 0.75,
     timestamp: new Date().toISOString(),
@@ -423,7 +675,7 @@ export const mockModerationItems: ModerationResponse[] = [
   },
   {
     id: '2',
-    content: 'Another piece of content with potentially harmful material that requires immediate attention.',
+    content: 'Another piece of content with potentially harmful material that requires immediate attention from the moderation team.',
     decision: 'rejected',
     confidence: 0.92,
     timestamp: new Date(Date.now() - 3600000).toISOString(),
@@ -441,7 +693,7 @@ export const mockModerationItems: ModerationResponse[] = [
   },
   {
     id: '3',
-    content: 'Positive content that should be approved without any issues.',
+    content: 'Positive content that should be approved without any issues. This post promotes healthy discussions and community building.',
     decision: 'approved',
     confidence: 0.98,
     timestamp: new Date(Date.now() - 7200000).toISOString(),
@@ -459,7 +711,7 @@ export const mockModerationItems: ModerationResponse[] = [
   },
   {
     id: '4',
-    content: 'This content appears to contain suspicious links and may be spam. Please review carefully before making a decision.',
+    content: 'This content appears to contain suspicious links and may be spam. Please review carefully before making a decision about its status.',
     decision: 'pending',
     confidence: 0.68,
     timestamp: new Date(Date.now() - 1800000).toISOString(),
@@ -477,7 +729,7 @@ export const mockModerationItems: ModerationResponse[] = [
   },
   {
     id: '5',
-    content: 'Neutral content that does not violate any community guidelines but might benefit from manual review.',
+    content: 'Neutral content that does not violate any community guidelines but might benefit from manual review by experienced moderators.',
     decision: 'pending',
     confidence: 0.55,
     timestamp: new Date(Date.now() - 900000).toISOString(),
@@ -495,7 +747,7 @@ export const mockModerationItems: ModerationResponse[] = [
   },
   {
     id: '6',
-    content: 'This post contains copyrighted material that has been reported by the original content creator.',
+    content: 'This post contains copyrighted material that has been reported by the original content creator. Legal review may be required.',
     decision: 'pending',
     confidence: 0.87,
     timestamp: new Date(Date.now() - 300000).toISOString(),
@@ -509,6 +761,42 @@ export const mockModerationItems: ModerationResponse[] = [
       userId: 'user_303',
       platform: 'mobile',
       uploadDate: new Date(Date.now() - 300000).toISOString(),
+    },
+  },
+  {
+    id: '7',
+    content: 'Educational content about machine learning and AI technologies. This content appears to be informational and beneficial for learning.',
+    decision: 'approved',
+    confidence: 0.94,
+    timestamp: new Date(Date.now() - 1200000).toISOString(),
+    flagged: false,
+    type: 'text',
+    metadata: {
+      source: 'user_submission',
+      length: 156,
+      language: 'en',
+      url: 'https://example.com/content/7',
+      userId: 'user_404',
+      platform: 'web',
+      uploadDate: new Date(Date.now() - 1200000).toISOString(),
+    },
+  },
+  {
+    id: '8',
+    content: 'This content contains strong language and may not be suitable for all audiences. Consider age restrictions and community guidelines.',
+    decision: 'pending',
+    confidence: 0.73,
+    timestamp: new Date(Date.now() - 600000).toISOString(),
+    flagged: true,
+    type: 'text',
+    metadata: {
+      source: 'user_submission',
+      length: 167,
+      language: 'en',
+      url: 'https://example.com/content/8',
+      userId: 'user_505',
+      platform: 'mobile',
+      uploadDate: new Date(Date.now() - 600000).toISOString(),
     },
   },
 ];

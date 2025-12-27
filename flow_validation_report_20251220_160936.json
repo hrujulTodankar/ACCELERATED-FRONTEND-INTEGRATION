@@ -1,0 +1,18 @@
+{
+  "validation_timestamp": "20251220_160936",
+  "total_issues": 4,
+  "issues": [
+    "src/components/AnalyticsPanel.tsx appears to be corrupted (too few lines)",
+    "src/components/NLPContextPanel.tsx appears to be corrupted (too few lines)",
+    "src/components/TagsPanel.tsx appears to be corrupted (too few lines)",
+    "Missing dark veil background comment"
+  ],
+  "validation_categories": {
+    "typescript_types": 0,
+    "component_structure": 3,
+    "store_integration": 0,
+    "api_service": 0,
+    "css_styling": 1
+  },
+  "status": "FAIL"
+}
