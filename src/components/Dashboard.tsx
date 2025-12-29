@@ -6,6 +6,7 @@ import ModerationCard from './ModerationCard';
 import AnalyticsPanel from './AnalyticsPanel';
 import NLPContextPanel from './NLPContextPanel';
 import TagsPanel from './TagsPanel';
+import SecurityPanel from './SecurityPanel';
 import StatusBadge from './StatusBadge';
 import LoadingSkeleton from './LoadingSkeleton';
 import ErrorState from './ErrorState';
@@ -290,6 +291,9 @@ const Dashboard: React.FC = () => {
                 {selectedItem.tags && (
                   <TagsPanel tagsData={selectedItem.tags} loading={loading.tags} />
                 )}
+
+                {/* Security Panel */}
+                <SecurityPanel loading={loading.analytics} contentId={selectedItem.id} />
               </div>
             ) : (
               <div className=" shadow rounded-lg p-6">
