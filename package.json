@@ -22,6 +22,7 @@
     "lucide-react": "^0.294.0",
     "ogl": "^1.0.11",
     "postprocessing": "^6.38.1",
+    "puppeteer": "^24.34.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "tailwind-merge": "^3.4.0",

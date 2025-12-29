@@ -4,7 +4,7 @@ import StatusBadge from './StatusBadge';
 import ConfidenceProgressBar from './ConfidenceProgressBar';
 import FeedbackBar from './FeedbackBar';
 import RLRewardPanel from './RLRewardPanel';
-import { ModerationResponse } from '../types';
+import { ModerationResponse, FeedbackResponse } from '../types';
 
 interface ModerationCardProps {
   content: ModerationResponse;
@@ -44,7 +44,7 @@ const ModerationCard: React.FC<ModerationCardProps> = ({ content, onFeedback, lo
   return (
     <div 
       className={`bg-white rounded-lg shadow p-6 mb-4 hover:shadow-md transition-shadow duration-200 cursor-pointer ${
-        content.statusBadge?.type === 'updated' ? 'ring-2 ring-green-300 animate-pulse-fast' : ''
+        content.statusBadge?.type === 'updated' ? 'ring-2 ring-green-300 animate-pulse' : ''
       }`}
       onClick={onClick}
     >
@@ -100,7 +100,44 @@ const ModerationCard: React.FC<ModerationCardProps> = ({ content, onFeedback, lo
 
       {/* Actions */}
       <div className="border-t pt-4">
-        <FeedbackBar contentId={content.id} onFeedback={(contentId, feedback) => onFeedback({ ...feedback, itemId: contentId })} loading={loading} />
+        <FeedbackBar contentId={content.id} onFeedback={(contentId, feedback) => {
+          // Convert the feedback format to match the expected FeedbackResponse format
+          let formattedFeedback: Omit<FeedbackResponse, 'id' | 'timestamp'> & { itemId?: string };
+          
+          if (feedback.type === 'thumbs_up') {
+            formattedFeedback = {
+              thumbsUp: feedback.value,
+              comment: feedback.comment || '',
+              userId: 'current_user',
+              itemId: contentId
+            };
+          } else if (feedback.type === 'thumbs_down') {
+            // thumbsDown is represented as thumbsUp: false
+            formattedFeedback = {
+              thumbsUp: false,
+              comment: feedback.comment || '',
+              userId: 'current_user',
+              itemId: contentId
+            };
+          } else if (feedback.type === 'comment') {
+            formattedFeedback = {
+              thumbsUp: false, // Default to no thumbs up for comments
+              comment: feedback.value,
+              userId: 'current_user',
+              itemId: contentId
+            };
+          } else {
+            // Default fallback
+            formattedFeedback = {
+              thumbsUp: false,
+              comment: '',
+              userId: 'current_user',
+              itemId: contentId
+            };
+          }
+          
+          return onFeedback(formattedFeedback);
+        }} loading={loading} />
       </div>
 
       {/* RL Reward Panel */}

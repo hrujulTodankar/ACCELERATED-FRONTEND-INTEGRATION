@@ -40,14 +40,15 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     // Fetch additional data when an item is selected
-    if (selectedItem) {
+    const itemId = selectedItem?.id;
+    if (itemId) {
       const fetchAdditionalData = async () => {
         try {
           // Fetch analytics, NLP context, and tags in parallel
           await Promise.all([
-            fetchAnalytics(selectedItem.id),
-            fetchNLPContext(selectedItem.id),
-            fetchTags(selectedItem.id),
+            fetchAnalytics(itemId),
+            fetchNLPContext(itemId),
+            fetchTags(itemId),
           ]);
         } catch (error) {
           console.error('Error fetching additional data:', error);
@@ -55,7 +56,8 @@ const Dashboard: React.FC = () => {
       };
       fetchAdditionalData();
     }
-  }, [selectedItem, fetchAnalytics, fetchNLPContext, fetchTags]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedItem?.id]);
 
   // Simulate RL updates for adaptive UI refresh
   useEffect(() => {
@@ -124,7 +126,7 @@ const Dashboard: React.FC = () => {
   return (
     <div className="min-h-screen relative">
       {/* Header */}
-      <header className="/10 backdrop-blur-sm shadow-sm border-b border-gray-200/50 relative z-10">
+      <header className="bg-white/10 backdrop-blur-sm shadow-sm border-b border-gray-200/50 relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">

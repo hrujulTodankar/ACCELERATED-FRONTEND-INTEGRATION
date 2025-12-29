@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Button Test Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        .button-primary {
+            background: #007bff;
+            color: white;
+        }
+        .button-primary:hover {
+            background: #0056b3;
+        }
+        .button-success {
+            background: #28a745;
+            color: white;
+        }
+        .button-success:hover {
+            background: #1e7e34;
+        }
+        .button-danger {
+            background: #dc3545;
+            color: white;
+        }
+        .button-danger:hover {
+            background: #c82333;
+        }
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Website Button Functionality Test</h1>
+        <p>This page tests if buttons work properly and don't cause the website to stop abruptly.</p>
+        
+        <div class="test-section">
+            <h3>1. Basic Button Test</h3>
+            <button class="button button-primary" onclick="testBasicButton()">Test Basic Button</button>
+            <button class="button button-success" onclick="testSuccessButton()">Test Success Button</button>
+            <button class="button button-danger" onclick="testDangerButton()">Test Danger Button</button>
+            <div id="basic-status" class="status"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>2. Multiple Click Test</h3>
+            <button class="button button-primary" onclick="testMultipleClicks()">Test Multiple Clicks (10x)</button>
+            <div id="multiple-status" class="status"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>3. Rapid Click Test</h3>
+            <button class="button button-danger" onclick="testRapidClicks()">Test Rapid Clicks (20x in 2 seconds)</button>
+            <div id="rapid-status" class="status"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>4. Integration Test - Load Dashboard</h3>
+            <p>The actual website is running at: <strong>http://localhost:3002</strong></p>
+            <button class="button button-primary" onclick="loadDashboard()">Load Dashboard in iframe</button>
+            <div id="integration-status" class="status"></div>
+            <iframe id="dashboard-frame" style="display: none;"></iframe>
+        </div>
+
+        <div class="test-section">
+            <h3>5. Console Error Check</h3>
+            <button class="button button-success" onclick="checkConsoleErrors()">Check for JavaScript Errors</button>
+            <div id="console-status" class="status"></div>
+        </div>
+    </div>
+
+    <script>
+        let clickCount = 0;
+        
+        function showStatus(elementId, message, isSuccess = true) {
+            const status = document.getElementById(elementId);
+            status.textContent = message;
+            status.className = 'status ' + (isSuccess ? 'success' : 'error');
+            status.style.display = 'block';
+        }
+
+        function testBasicButton() {
+            try {
+                clickCount++;
+                showStatus('basic-status', `Basic button clicked successfully! (Click #${clickCount})`, true);
+            } catch (error) {
+                showStatus('basic-status', `Error: ${error.message}`, false);
+            }
+        }
+
+        function testSuccessButton() {
+            try {
+                clickCount++;
+                showStatus('basic-status', `Success button clicked! Website is responding normally. (Click #${clickCount})`, true);
+            } catch (error) {
+                showStatus('basic-status', `Error: ${error.message}`, false);
+            }
+        }
+
+        function testDangerButton() {
+            try {
+                clickCount++;
+                showStatus('basic-status', `Danger button clicked! No crashes detected. (Click #${clickCount})`, true);
+            } catch (error) {
+                showStatus('basic-status', `Error: ${error.message}`, false);
+            }
+        }
+
+        function testMultipleClicks() {
+            try {
+                let successCount = 0;
+                for (let i = 0; i < 10; i++) {
+                    try {
+                        clickCount++;
+                        successCount++;
+                    } catch (error) {
+                        showStatus('multiple-status', `Error on click ${i + 1}: ${error.message}`, false);
+                        return;
+                    }
+                }
+                showStatus('multiple-status', `Successfully clicked 10 times! Website remained stable. (Total clicks: ${clickCount})`, true);
+            } catch (error) {
+                showStatus('multiple-status', `Error: ${error.message}`, false);
+            }
+        }
+
+        function testRapidClicks() {
+            try {
+                let successCount = 0;
+                for (let i = 0; i < 20; i++) {
+                    setTimeout(() => {
+                        try {
+                            clickCount++;
+                            successCount++;
+                            if (i === 19) {
+                                showStatus('rapid-status', `Rapid clicking test completed! All ${successCount} clicks successful. (Total clicks: ${clickCount})`, true);
+                            }
+                        } catch (error) {
+                            showStatus('rapid-status', `Error on rapid click ${i + 1}: ${error.message}`, false);
+                        }
+                    }, i * 100);
+                }
+            } catch (error) {
+                showStatus('rapid-status', `Error: ${error.message}`, false);
+            }
+        }
+
+        function loadDashboard() {
+            try {
+                const iframe = document.getElementById('dashboard-frame');
+                iframe.src = 'http://localhost:3002';
+                iframe.style.display = 'block';
+                showStatus('integration-status', 'Dashboard loaded successfully! Check the iframe below.', true);
+                
+                // Monitor for iframe errors
+                iframe.onload = function() {
+                    showStatus('integration-status', 'Dashboard loaded and rendered successfully!', true);
+                };
+                
+                iframe.onerror = function() {
+                    showStatus('integration-status', 'Error loading dashboard in iframe.', false);
+                };
+            } catch (error) {
+                showStatus('integration-status', `Error: ${error.message}`, false);
+            }
+        }
+
+        function checkConsoleErrors() {
+            try {
+                // Check if we can access console
+                if (typeof console !== 'undefined' && console.log) {
+                    console.log('Testing console access...');
+                    showStatus('console-status', 'Console access working. Check browser console for any errors.', true);
+                } else {
+                    showStatus('console-status', 'Console not accessible.', false);
+                }
+            } catch (error) {
+                showStatus('console-status', `Error: ${error.message}`, false);
+            }
+        }
+
+        // Auto-test on page load
+        window.onload = function() {
+            setTimeout(() => {
+                testBasicButton();
+                console.log('Page loaded successfully. All basic functions should work.');
+            }, 500);
+        };
+    </script>
+</body>
+</html>

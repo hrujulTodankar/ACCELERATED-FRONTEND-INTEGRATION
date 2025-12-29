@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feedback Submission Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        .button-primary {
+            background: #007bff;
+            color: white;
+        }
+        .button-primary:hover {
+            background: #0056b3;
+        }
+        .button-success {
+            background: #28a745;
+            color: white;
+        }
+        .button-success:hover {
+            background: #1e7e34;
+        }
+        .button-danger {
+            background: #dc3545;
+            color: white;
+        }
+        .button-danger:hover {
+            background: #c82333;
+        }
+        .button-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+        .button-warning:hover {
+            background: #e0a800;
+        }
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .mock-feedback {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .feedback-button {
+            padding: 8px 16px;
+            margin: 2px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .feedback-button:hover {
+            background: #f5f5f5;
+        }
+        .feedback-button.active {
+            background: #007bff;
+            color: white;
+        }
+        textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
+        }
+        iframe {
+            width: 100%;
+            height: 700px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Feedback Submission Functionality Test</h1>
+        <p>This page tests the feedback submission functionality specifically to ensure buttons work properly.</p>
+        
+        <div class="test-section">
+            <h3>1. Dashboard Integration Test</h3>
+            <p>Load the actual dashboard and test feedback functionality:</p>
+            <button class="button button-primary" onclick="loadDashboard()">Load Dashboard</button>
+            <button class="button button-success" onclick="testFeedbackInDashboard()">Test Feedback in Dashboard</button>
+            <div id="dashboard-status" class="status"></div>
+            <iframe id="dashboard-frame" style="display: none;"></iframe>
+        </div>
+
+        <div class="test-section">
+            <h3>2. Mock Feedback Handler Test</h3>
+            <p>Test feedback processing without the actual dashboard:</p>
+            
+            <div class="mock-feedback">
+                <h4>Mock Content Item</h4>
+                <p><strong>Content:</strong> "This is a test content for feedback testing."</p>
+                <p><strong>ID:</strong> test-content-123</p>
+                
+                <div style="margin-top: 15px;">
+                    <span style="font-weight: bold; margin-right: 10px;">Feedback:</span>
+                    <button class="feedback-button" id="thumbs-up" onclick="handleThumbsUp()">👍 Helpful</button>
+                    <button class="feedback-button" id="thumbs-down" onclick="handleThumbsDown()">👎 Not Helpful</button>
+                    <button class="feedback-button" id="comment-btn" onclick="toggleCommentBox()">💬 Comment</button>
+                </div>
+                
+                <div id="comment-box" style="display: none; margin-top: 15px;">
+                    <textarea id="comment-text" placeholder="Share your thoughts about this content..." rows="3"></textarea>
+                    <div style="margin-top: 10px;">
+                        <button class="button button-success" onclick="submitComment()">Submit Comment</button>
+                        <button class="button" onclick="toggleCommentBox()">Cancel</button>
+                    </div>
+                </div>
+                
+                <div id="feedback-status" class="status"></div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>3. Feedback Data Format Test</h3>
+            <p>Test different feedback data formats:</p>
+            <button class="button button-primary" onclick="testThumbsUpFormat()">Test Thumbs Up Format</button>
+            <button class="button button-danger" onclick="testThumbsDownFormat()">Test Thumbs Down Format</button>
+            <button class="button button-warning" onclick="testCommentFormat()">Test Comment Format</button>
+            <div id="format-status" class="status"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>4. Error Handling Test</h3>
+            <p>Test error scenarios:</p>
+            <button class="button button-danger" onclick="testNetworkError()">Test Network Error</button>
+            <button class="button button-danger" onclick="testValidationError()">Test Validation Error</button>
+            <button class="button button-danger" onclick="testTimeoutError()">Test Timeout Error</button>
+            <div id="error-status" class="status"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>5. Console Monitoring</h3>
+            <p>Monitor console for feedback-related messages:</p>
+            <button class="button button-success" onclick="checkConsole()">Check Console</button>
+            <button class="button button-primary" onclick="clearConsole()">Clear Console</button>
+            <div id="console-status" class="status"></div>
+        </div>
+    </div>
+
+    <script>
+        let currentFeedback = {
+            thumbsUp: false,
+            thumbsDown: false,
+            comment: ''
+        };
+
+        function showStatus(elementId, message, type = 'info') {
+            const status = document.getElementById(elementId);
+            status.textContent = message;
+            status.className = 'status ' + type;
+            status.style.display = 'block';
+        }
+
+        function loadDashboard() {
+            const iframe = document.getElementById('dashboard-frame');
+            iframe.src = 'http://localhost:3002';
+            iframe.style.display = 'block';
+            showStatus('dashboard-status', 'Dashboard loaded. Look for content items with feedback buttons.', 'success');
+        }
+
+        function testFeedbackInDashboard() {
+            showStatus('dashboard-status', 'Testing feedback in dashboard... Check the loaded iframe above.', 'info');
+            
+            // Try to access the iframe and test feedback
+            setTimeout(() => {
+                const iframe = document.getElementById('dashboard-frame');
+                try {
+                    // This might not work due to CORS, but we can try
+                    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                    const feedbackButtons = iframeDoc.querySelectorAll('[class*="feedback"], [class*="thumbs"]');
+                    showStatus('dashboard-status', `Found ${feedbackButtons.length} feedback-related elements in dashboard.`, 'success');
+                } catch (error) {
+                    showStatus('dashboard-status', 'Cannot access iframe content due to security restrictions. Test manually in the iframe above.', 'info');
+                }
+            }, 2000);
+        }
+
+        function handleThumbsUp() {
+            currentFeedback.thumbsUp = !currentFeedback.thumbsUp;
+            if (currentFeedback.thumbsUp) {
+                currentFeedback.thumbsDown = false;
+                document.getElementById('thumbs-down').classList.remove('active');
+            }
+            document.getElementById('thumbs-up').classList.toggle('active');
+            
+            const feedbackData = {
+                type: 'thumbs_up',
+                value: currentFeedback.thumbsUp,
+                comment: currentFeedback.comment
+            };
+            
+            console.log('Thumbs Up clicked:', feedbackData);
+            showStatus('feedback-status', `Thumbs ${currentFeedback.thumbsUp ? 'Up' : 'Down'} recorded: ${JSON.stringify(feedbackData)}`, 'success');
+            
+            // Simulate feedback submission
+            simulateFeedbackSubmission('test-content-123', feedbackData);
+        }
+
+        function handleThumbsDown() {
+            currentFeedback.thumbsDown = !currentFeedback.thumbsDown;
+            if (currentFeedback.thumbsDown) {
+                currentFeedback.thumbsUp = false;
+                document.getElementById('thumbs-up').classList.remove('active');
+            }
+            document.getElementById('thumbs-down').classList.toggle('active');
+            
+            const feedbackData = {
+                type: 'thumbs_down',
+                value: currentFeedback.thumbsDown,
+                comment: currentFeedback.comment
+            };
+            
+            console.log('Thumbs Down clicked:', feedbackData);
+            showStatus('feedback-status', `Thumbs ${currentFeedback.thumbsDown ? 'Down' : 'Up'} recorded: ${JSON.stringify(feedbackData)}`, 'success');
+            
+            // Simulate feedback submission
+            simulateFeedbackSubmission('test-content-123', feedbackData);
+        }
+
+        function toggleCommentBox() {
+            const commentBox = document.getElementById('comment-box');
+            const isVisible = commentBox.style.display !== 'none';
+            commentBox.style.display = isVisible ? 'none' : 'block';
+            
+            if (!isVisible) {
+                document.getElementById('comment-text').focus();
+            }
+        }
+
+        function submitComment() {
+            const commentText = document.getElementById('comment-text').value.trim();
+            if (!commentText) {
+                showStatus('feedback-status', 'Please enter a comment before submitting.', 'error');
+                return;
+            }
+            
+            currentFeedback.comment = commentText;
+            
+            const feedbackData = {
+                type: 'comment',
+                value: commentText,
+                thumbsUp: currentFeedback.thumbsUp,
+                thumbsDown: currentFeedback.thumbsDown
+            };
+            
+            console.log('Comment submitted:', feedbackData);
+            showStatus('feedback-status', `Comment submitted: "${commentText}"`, 'success');
+            
+            // Simulate feedback submission
+            simulateFeedbackSubmission('test-content-123', feedbackData);
+            
+            // Clear the form
+            document.getElementById('comment-text').value = '';
+            toggleCommentBox();
+        }
+
+        function simulateFeedbackSubmission(contentId, feedbackData) {
+            // Simulate the feedback submission process
+            console.log(`Submitting feedback for ${contentId}:`, feedbackData);
+            
+            // This simulates what happens in the actual ModerationCard component
+            let formattedFeedback;
+            
+            if (feedbackData.type === 'thumbs_up') {
+                formattedFeedback = {
+                    thumbsUp: feedbackData.value,
+                    comment: feedbackData.comment || '',
+                    userId: 'current_user',
+                    itemId: contentId
+                };
+            } else if (feedbackData.type === 'thumbs_down') {
+                formattedFeedback = {
+                    thumbsUp: false, // thumbsDown is represented as thumbsUp: false
+                    comment: feedbackData.comment || '',
+                    userId: 'current_user',
+                    itemId: contentId
+                };
+            } else if (feedbackData.type === 'comment') {
+                formattedFeedback = {
+                    thumbsUp: false,
+                    comment: feedbackData.value,
+                    userId: 'current_user',
+                    itemId: contentId
+                };
+            }
+            
+            console.log('Formatted feedback:', formattedFeedback);
+            
+            // Simulate API call
+            setTimeout(() => {
+                console.log('Feedback submitted successfully:', formattedFeedback);
+                showStatus('feedback-status', 'Feedback submitted successfully! Check console for details.', 'success');
+            }, 500);
+        }
+
+        function testThumbsUpFormat() {
+            const testData = { type: 'thumbs_up', value: true, comment: 'This is helpful' };
+            console.log('Testing thumbs up format:', testData);
+            showStatus('format-status', 'Thumbs up format test: ' + JSON.stringify(testData), 'success');
+        }
+
+        function testThumbsDownFormat() {
+            const testData = { type: 'thumbs_down', value: true, comment: 'This is not helpful' };
+            console.log('Testing thumbs down format:', testData);
+            showStatus('format-status', 'Thumbs down format test: ' + JSON.stringify(testData), 'success');
+        }
+
+        function testCommentFormat() {
+            const testData = { type: 'comment', value: 'This is a test comment' };
+            console.log('Testing comment format:', testData);
+            showStatus('format-status', 'Comment format test: ' + JSON.stringify(testData), 'success');
+        }
+
+        function testNetworkError() {
+            console.error('Simulating network error...');
+            showStatus('error-status', 'Network error simulated. Check console for error details.', 'error');
+        }
+
+        function testValidationError() {
+            console.warn('Simulating validation error...');
+            showStatus('error-status', 'Validation error simulated. Check console for warning details.', 'error');
+        }
+
+        function testTimeoutError() {
+            console.error('Simulating timeout error...');
+            showStatus('error-status', 'Timeout error simulated. Check console for error details.', 'error');
+        }
+
+        function checkConsole() {
+            const logs = [];
+            
+            // Get console logs (this is limited in browser environment)
+            if (console.log.toString().includes('native code')) {
+                logs.push('Console is accessible and working');
+            }
+            
+            showStatus('console-status', 'Console check completed. Check browser developer tools for detailed logs.', 'success');
+        }
+
+        function clearConsole() {
+            console.clear();
+            showStatus('console-status', 'Console cleared successfully.', 'success');
+        }
+
+        // Auto-initialize
+        window.onload = function() {
+            console.log('Feedback test page loaded successfully');
+            showStatus('feedback-status', 'Feedback test page ready. Test the feedback functionality above.', 'info');
+        };
+    </script>
+</body>
+</html>

@@ -7,11 +7,21 @@ interface FilterBarProps {
   onSearch: (searchTerm: string) => void;
 }
 
+interface ExtendedFilterState {
+  search?: string;
+  decision?: string;
+  type?: string;
+  confidenceRange?: [number, number];
+  flagged?: boolean | null;
+  startDate?: string;
+  endDate?: string;
+}
+
 const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange, onSearch }) => {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [localFilters, setLocalFilters] = useState(filters);
 
-  const handleFilterChange = (key: string, value: any) => {
+  const handleFilterChange = (key: keyof ExtendedFilterState, value: any) => {
     const newFilters = { ...localFilters, [key]: value };
     setLocalFilters(newFilters);
     onFilterChange(newFilters);
@@ -28,11 +38,11 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange, onSearch
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     if (searchRef.current) window.clearTimeout(searchRef.current);
-    searchRef.current = window.setTimeout(() => onSearch(value), 400) as unknown as number;
+    searchRef.current = window.setTimeout(() => onSearch(value), 400);
   };
 
   const clearFilters = () => {
-    const clearedFilters = {
+    const clearedFilters: ExtendedFilterState = {
       search: '',
       decision: '',
       type: '',

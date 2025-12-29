@@ -1,7 +1,8 @@
 import Dashboard from './components/Dashboard'
 import { ModerationProvider } from './store/moderationStore'
-// @ts-ignore
 import DarkVeil from './components/DarkVeil'
+import ErrorBoundary from './components/ErrorBoundary'
+
 import ToastContainer from './components/Toast'
 import './App.css'
 
@@ -12,20 +13,26 @@ function App() {
 
         {/* DarkVeil background */}
         <div className="fixed inset-0 pointer-events-none -z-10">
-          <DarkVeil
-            hueShift={36}
-            noiseIntensity={0}
-            scanlineIntensity={0}
-            speed={3}
-            scanlineFrequency={1}
-            warpAmount={1}
-            resolutionScale={1}
-          />
+          <ErrorBoundary fallback={({ error }) => (
+            <div className="w-full h-full bg-gradient-to-br from-blue-900 to-purple-900 opacity-80"></div>
+          )}>
+            <DarkVeil
+              hueShift={36}
+              noiseIntensity={0}
+              scanlineIntensity={0}
+              speed={3}
+              scanlineFrequency={1}
+              warpAmount={1}
+              resolutionScale={1}
+            />
+          </ErrorBoundary>
         </div>
 
         {/* App content */}
         <div className="relative z-10">
-          <Dashboard />
+          <ErrorBoundary>
+            <Dashboard />
+          </ErrorBoundary>
           <ToastContainer />
         </div>
 

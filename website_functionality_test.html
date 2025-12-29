@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Website Functionality Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-result {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 Website Functionality Test Suite</h1>
+    
+    <div class="test-container">
+        <h2>Website Status Check</h2>
+        <div class="test-section">
+            <h3>1. Development Server Status</h3>
+            <p>Testing if the development server is running...</p>
+            <button onclick="testDevServer()">Test Dev Server</button>
+            <div id="dev-server-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>2. React App Loading Test</h3>
+            <p>Testing if React components load without errors...</p>
+            <button onclick="testReactApp()">Test React App</button>
+            <div id="react-app-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>3. Button Functionality Test</h3>
+            <p>Testing various button interactions...</p>
+            <button id="test-button-1" onclick="testButtonClick('test-button-1')">Test Button 1</button>
+            <button id="test-button-2" onclick="testButtonClick('test-button-2')">Test Button 2</button>
+            <button id="test-button-3" onclick="testButtonClick('test-button-3')">Test Button 3</button>
+            <button onclick="testAllButtons()">Test All Buttons</button>
+            <div id="button-test-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>4. Console Error Monitoring</h3>
+            <p>Monitoring JavaScript console for errors...</p>
+            <button onclick="startErrorMonitoring()">Start Monitoring</button>
+            <button onclick="stopErrorMonitoring()">Stop Monitoring</button>
+            <button onclick="checkConsoleErrors()">Check Current Errors</button>
+            <div id="console-error-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>5. Network Request Test</h3>
+            <p>Testing API endpoints and network requests...</p>
+            <button onclick="testNetworkRequests()">Test Network Requests</button>
+            <div id="network-test-result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>6. React Component Interaction Test</h3>
+            <p>Testing React component interactions...</p>
+            <button onclick="testReactInteractions()">Test React Components</button>
+            <div id="react-interaction-result"></div>
+        </div>
+    </div>
+
+    <script>
+        let errorMonitoringActive = false;
+        let originalErrorHandler = null;
+        let consoleErrors = [];
+
+        function showResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="test-result ${type}">${message}</div>`;
+        }
+
+        async function testDevServer() {
+            try {
+                showResult('dev-server-result', 'Testing development server...', 'info');
+                const response = await fetch('http://localhost:5173/');
+                
+                if (response.ok) {
+                    showResult('dev-server-result', 
+                        '✅ Development server is running successfully on http://localhost:5173', 
+                        'success'
+                    );
+                } else {
+                    showResult('dev-server-result', 
+                        `⚠️ Server responded with status: ${response.status}`, 
+                        'error'
+                    );
+                }
+            } catch (error) {
+                showResult('dev-server-result', 
+                    `❌ Failed to connect to development server: ${error.message}`, 
+                    'error'
+                );
+            }
+        }
+
+        async function testReactApp() {
+            try {
+                showResult('react-app-result', 'Checking React app...', 'info');
+                
+                // Test if React is loaded
+                if (typeof React !== 'undefined') {
+                    showResult('react-app-result', 
+                        '✅ React is loaded and available', 
+                        'success'
+                    );
+                } else {
+                    showResult('react-app-result', 
+                        '❌ React is not loaded', 
+                        'error'
+                    );
+                }
+
+                // Test if the main app container exists
+                const appContainer = document.getElementById('root');
+                if (appContainer) {
+                    showResult('react-app-result', 
+                        '✅ React app container found', 
+                        'success'
+                    );
+                } else {
+                    showResult('react-app-result', 
+                        '❌ React app container not found', 
+                        'error'
+                    );
+                }
+            } catch (error) {
+                showResult('react-app-result', 
+                    `❌ Error testing React app: ${error.message}`, 
+                    'error'
+                );
+            }
+        }
+
+        function testButtonClick(buttonId) {
+            try {
+                const button = document.getElementById(buttonId);
+                if (button) {
+                    // Simulate a click
+                    button.click();
+                    showResult('button-test-result', 
+                        `✅ Button ${buttonId} clicked successfully`, 
+                        'success'
+                    );
+                } else {
+                    showResult('button-test-result', 
+                        `❌ Button ${buttonId} not found`, 
+                        'error'
+                    );
+                }
+            } catch (error) {
+                showResult('button-test-result', 
+                    `❌ Error clicking button ${buttonId}: ${error.message}`, 
+                    'error'
+                );
+            }
+        }
+
+        function testAllButtons() {
+            const buttons = ['test-button-1', 'test-button-2', 'test-button-3'];
+            let results = [];
+            
+            buttons.forEach(buttonId => {
+                try {
+                    const button = document.getElementById(buttonId);
+                    if (button) {
+                        button.click();
+                        results.push(`✅ ${buttonId} works`);
+                    } else {
+                        results.push(`❌ ${buttonId} not found`);
+                    }
+                } catch (error) {
+                    results.push(`❌ ${buttonId} error: ${error.message}`);
+                }
+            });
+
+            showResult('button-test-result', results.join('<br>'), 'info');
+        }
+
+        function startErrorMonitoring() {
+            if (errorMonitoringActive) {
+                showResult('console-error-result', 'Error monitoring is already active', 'info');
+                return;
+            }
+
+            errorMonitoringActive = true;
+            consoleErrors = [];
+
+            // Store original console methods
+            originalErrorHandler = {
+                error: console.error,
+                warn: console.warn
+            };
+
+            // Override console.error to capture errors
+            console.error = function(...args) {
+                originalErrorHandler.error.apply(console, args);
+                consoleErrors.push({
+                    type: 'error',
+                    message: args.join(' '),
+                    timestamp: new Date().toISOString()
+                });
+            };
+
+            // Override console.warn to capture warnings
+            console.warn = function(...args) {
+                originalErrorHandler.warn.apply(console, args);
+                consoleErrors.push({
+                    type: 'warn',
+                    message: args.join(' '),
+                    timestamp: new Date().toISOString()
+                });
+            };
+
+            showResult('console-error-result', 
+                '✅ Error monitoring started. Click buttons to test functionality.', 
+                'success'
+            );
+        }
+
+        function stopErrorMonitoring() {
+            if (!errorMonitoringActive) {
+                showResult('console-error-result', 'Error monitoring is not active', 'info');
+                return;
+            }
+
+            errorMonitoringActive = false;
+
+            // Restore original console methods
+            if (originalErrorHandler) {
+                console.error = originalErrorHandler.error;
+                console.warn = originalErrorHandler.warn;
+            }
+
+            showResult('console-error-result', 
+                '✅ Error monitoring stopped', 
+                'success'
+            );
+        }
+
+        function checkConsoleErrors() {
+            if (consoleErrors.length === 0) {
+                showResult('console-error-result', 
+                    '✅ No errors detected in console', 
+                    'success'
+                );
+            } else {
+                let errorList = consoleErrors.map(error => 
+                    `${error.timestamp}: ${error.type.toUpperCase()}: ${error.message}`
+                ).join('<br>');
+                
+                showResult('console-error-result', 
+                    `⚠️ Found ${consoleErrors.length} console messages:<br>${errorList}`, 
+                    'error'
+                );
+            }
+        }
+
+        async function testNetworkRequests() {
+            try {
+                showResult('network-test-result', 'Testing network requests...', 'info');
+
+                // Test basic fetch
+                const response = await fetch('http://localhost:5173/api/health');
+                showResult('network-test-result', 
+                    `✅ Network test completed. Status: ${response.status}`, 
+                    'success'
+                );
+            } catch (error) {
+                showResult('network-test-result', 
+                    `❌ Network test failed: ${error.message}`, 
+                    'error'
+                );
+            }
+        }
+
+        function testReactInteractions() {
+            try {
+                // Test if React DevTools are available
+                if (typeof window.__REACT_DEVTOOLS_GLOBAL_HOOK__ !== 'undefined') {
+                    showResult('react-interaction-result', 
+                        '✅ React DevTools detected - React app is running', 
+                        'success'
+                    );
+                } else {
+                    showResult('react-interaction-result', 
+                        'ℹ️ React DevTools not detected (normal in production)', 
+                        'info'
+                    );
+                }
+
+                // Test if we can access React components
+                const rootElement = document.getElementById('root');
+                if (rootElement && rootElement.children.length > 0) {
+                    showResult('react-interaction-result', 
+                        '✅ React components are rendered in the DOM', 
+                        'success'
+                    );
+                } else {
+                    showResult('react-interaction-result', 
+                        '⚠️ No React components found in DOM', 
+                        'info'
+                    );
+                }
+            } catch (error) {
+                showResult('react-interaction-result', 
+                    `❌ Error testing React interactions: ${error.message}`, 
+                    'error'
+                );
+            }
+        }
+
+        // Auto-start some tests when page loads
+        window.addEventListener('load', function() {
+            setTimeout(() => {
+                testDevServer();
+                testReactApp();
+            }, 1000);
+        });
+
+        // Global error handler
+        window.addEventListener('error', function(event) {
+            consoleErrors.push({
+                type: 'error',
+                message: event.message,
+                filename: event.filename,
+                lineno: event.lineno,
+                colno: event.colno,
+                timestamp: new Date().toISOString()
+            });
+        });
+
+        // Unhandled promise rejection handler
+        window.addEventListener('unhandledrejection', function(event) {
+            consoleErrors.push({
+                type: 'promise-rejection',
+                message: event.reason,
+                timestamp: new Date().toISOString()
+            });
+        });
+    </script>
+</body>
+</html>

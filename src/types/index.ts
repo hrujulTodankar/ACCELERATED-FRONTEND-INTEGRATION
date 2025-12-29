@@ -208,4 +208,6 @@ export interface ModerationState {
   updateItemStatus: (id: string, statusBadge: StatusBadge, rewardStatus?: 'awaiting' | 'received') => void;
   simulateRLUpdate: (id: string) => void;
   processRLReward: (id: string, action: 'approve' | 'reject' | 'pending') => Promise<any>;
+  startRLPolling: () => void;
+  stopRLPolling: () => void;
 }

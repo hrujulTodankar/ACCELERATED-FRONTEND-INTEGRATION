@@ -83,7 +83,7 @@ export default function DarkVeil({
   warpAmount = 0,
   resolutionScale = 1
 }) {
-  const ref = useRef(null);
+  const ref = useRef<any>(null);
   const [webglSupported, setWebglSupported] = useState(true);
 
   useEffect(() => {
@@ -108,64 +108,125 @@ export default function DarkVeil({
       return;
     }
 
+    let renderer: any = null;
+    let program: any = null;
+    let mesh: any = null;
+    let frame: number = 0;
+
     try {
-      const renderer = new Renderer({
-        dpr: Math.min(window.devicePixelRatio, 2),
+      // Ensure we have valid parameters
+      if (!hueShift && !noiseIntensity && !scanlineIntensity) {
+        console.log('DarkVeil: All effects disabled, hiding component');
+        setWebglSupported(false);
+        return;
+      }
+
+      renderer = new Renderer({
+        dpr: Math.min(window.devicePixelRatio || 1, 2),
         canvas
       });
 
       const gl = renderer.gl;
+      if (!gl) {
+        throw new Error('Failed to get WebGL context');
+      }
+
       const geometry = new Triangle(gl);
 
-      const program = new Program(gl, {
+      program = new Program(gl, {
         vertex,
         fragment,
         uniforms: {
           uTime: { value: 0 },
           uResolution: { value: new Vec2() },
-          uHueShift: { value: hueShift },
-          uNoise: { value: noiseIntensity },
-          uScan: { value: scanlineIntensity },
-          uScanFreq: { value: scanlineFrequency },
-          uWarp: { value: warpAmount }
+          uHueShift: { value: Number(hueShift) || 0 },
+          uNoise: { value: Number(noiseIntensity) || 0 },
+          uScan: { value: Number(scanlineIntensity) || 0 },
+          uScanFreq: { value: Number(scanlineFrequency) || 0 },
+          uWarp: { value: Number(warpAmount) || 0 }
         }
       });
 
-      const mesh = new Mesh(gl, { geometry, program });
+      mesh = new Mesh(gl, { geometry, program });
 
       const resize = () => {
-        const w = parent.clientWidth,
-          h = parent.clientHeight;
-        renderer.setSize(w * resolutionScale, h * resolutionScale);
-        program.uniforms.uResolution.value.set(w, h);
+        try {
+          const w = parent.clientWidth || window.innerWidth;
+          const h = parent.clientHeight || window.innerHeight;
+          renderer.setSize(w * (Number(resolutionScale) || 1), h * (Number(resolutionScale) || 1));
+          if (program?.uniforms?.uResolution?.value?.set) {
+            program.uniforms.uResolution.value.set(w, h);
+          }
+        } catch (resizeError) {
+          console.warn('DarkVeil resize error:', resizeError);
+        }
       };
 
-      window.addEventListener('resize', resize);
+      const handleResize = () => {
+        resize();
+      };
+
+      window.addEventListener('resize', handleResize);
       resize();
 
       const start = performance.now();
-      let frame = 0;
 
       const loop = () => {
-        program.uniforms.uTime.value = ((performance.now() - start) / 1000) * speed;
-        program.uniforms.uHueShift.value = hueShift;
-        program.uniforms.uNoise.value = noiseIntensity;
-        program.uniforms.uScan.value = scanlineIntensity;
-        program.uniforms.uScanFreq.value = scanlineFrequency;
-        program.uniforms.uWarp.value = warpAmount;
-        renderer.render({ scene: mesh });
-        frame = requestAnimationFrame(loop);
+        try {
+          if (!program?.uniforms || !renderer?.render) {
+            return; // Component unmounted or broken
+          }
+
+          program.uniforms.uTime.value = ((performance.now() - start) / 1000) * (Number(speed) || 0.5);
+          program.uniforms.uHueShift.value = Number(hueShift) || 0;
+          program.uniforms.uNoise.value = Number(noiseIntensity) || 0;
+          program.uniforms.uScan.value = Number(scanlineIntensity) || 0;
+          program.uniforms.uScanFreq.value = Number(scanlineFrequency) || 0;
+          program.uniforms.uWarp.value = Number(warpAmount) || 0;
+          
+          renderer.render({ scene: mesh });
+          frame = requestAnimationFrame(loop);
+        } catch (loopError) {
+          console.warn('DarkVeil render loop error:', loopError);
+          setWebglSupported(false);
+        }
       };
 
       loop();
 
       return () => {
-        cancelAnimationFrame(frame);
-        window.removeEventListener('resize', resize);
+        try {
+          if (frame) {
+            cancelAnimationFrame(frame);
+          }
+          window.removeEventListener('resize', handleResize);
+          
+          // Cleanup WebGL resources
+          if (mesh) {
+            mesh.delete();
+          }
+          if (program) {
+            program.delete();
+          }
+          if (renderer) {
+            renderer.delete();
+          }
+        } catch (cleanupError) {
+          console.warn('DarkVeil cleanup error:', cleanupError);
+        }
       };
     } catch (error) {
       console.error('DarkVeil initialization error:', error);
       setWebglSupported(false);
+      
+      // Cleanup on error
+      try {
+        if (mesh) mesh.delete();
+        if (program) program.delete();
+        if (renderer) renderer.delete();
+      } catch (cleanupError) {
+        console.warn('DarkVeil error cleanup error:', cleanupError);
+      }
     }
   }, [hueShift, noiseIntensity, scanlineIntensity, speed, scanlineFrequency, warpAmount, resolutionScale]);
 

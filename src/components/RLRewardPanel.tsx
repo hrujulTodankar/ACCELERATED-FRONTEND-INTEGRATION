@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TrendingUp, TrendingDown, Minus, Award, Zap } from 'lucide-react';
-import { RLReward } from '../../types';
+import { RLReward } from '../types';
 
 interface RLRewardPanelProps {
   rewardHistory: RLReward[];

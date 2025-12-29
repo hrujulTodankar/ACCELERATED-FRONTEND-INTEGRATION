@@ -3,7 +3,7 @@ import { ThumbsUp, ThumbsDown, MessageSquare, Send, X } from 'lucide-react';
 
 interface FeedbackBarProps {
   contentId: string;
-  onFeedback: (contentId: string, feedback: any) => void;
+  onFeedback: (contentId: string, feedback: { type: string; value: any; comment?: string }) => void;
   loading?: boolean;
 }
 

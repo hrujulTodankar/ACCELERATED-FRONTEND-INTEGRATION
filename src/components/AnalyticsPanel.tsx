@@ -34,7 +34,11 @@ const AnalyticsPanel: React.FC<AnalyticsPanelProps> = ({ analytics, loading = fa
     );
   }
 
-  const formatNumber = (num: number) => {
+  const formatNumber = (num: number | undefined | null) => {
+    // Handle undefined, null, or invalid numbers
+    if (num === undefined || num === null || isNaN(num)) {
+      return '0';
+    }
     if (num >= 1000000) {
       return (num / 1000000).toFixed(1) + 'M';
     }

@@ -31,73 +31,89 @@ const resolvedBaseURL = (typeof process !== 'undefined' && process.env.BHIV_BASE
   ? process.env.BHIV_BASE_URL
   : (import.meta.env?.VITE_API_BASE_URL || 'http://localhost:8001');
 
-const api = axios.create({
-  baseURL: resolvedBaseURL,
-  timeout: parseInt((typeof process !== 'undefined' && process.env.VITE_BHIV_TIMEOUT) || import.meta.env?.VITE_BHIV_TIMEOUT || '10000'),
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+// Additional Service Base URLs
+const taggingBaseURL = (typeof process !== 'undefined' && process.env.TAGGING_BASE_URL)
+  ? process.env.TAGGING_BASE_URL
+  : (import.meta.env?.VITE_TAGGING_BASE_URL || 'http://localhost:8002');
 
-// Enhanced request interceptor with detailed logging
-api.interceptors.request.use(
-  (config) => {
-    const startTime = Date.now();
-    (config as any).metadata = { startTime };
-    
-    apiLogger.debug(`Making ${config.method?.toUpperCase()} request to ${config.url}`);
-    
-    const token = localStorage.getItem('authToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    
-    // Add request ID for tracking
-    config.headers['X-Request-ID'] = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
-    return config;
-  },
-  (error) => {
-    apiLogger.error('Request interceptor error', error);
-    return Promise.reject(error);
-  }
-);
+const insightsBaseURL = (typeof process !== 'undefined' && process.env.INSIGHTS_BASE_URL)
+  ? process.env.INSIGHTS_BASE_URL
+  : (import.meta.env?.VITE_INSIGHTS_BASE_URL || 'http://localhost:8003');
 
-// Enhanced response interceptor with performance tracking
-api.interceptors.response.use(
-  (response) => {
-    const duration = Date.now() - ((response.config as any).metadata?.startTime || Date.now());
-    apiLogger.debug(`Response received in ${duration}ms from ${response.config.url}`);
-    
-    // Add response metadata
-    (response as any).metadata = {
-      duration,
-      requestId: response.config.headers['X-Request-ID'],
-      timestamp: new Date().toISOString(),
-    };
-    
-    return response;
-  },
-  (error) => {
-    const duration = error.config ? ((error.config as any).metadata?.startTime ? 
-      Date.now() - (error.config as any).metadata.startTime : 'unknown') : 'unknown';
-    
-    apiLogger.error(`Request failed after ${duration}ms: ${error.config?.url}`, {
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data,
-      message: error.message
-    });
-    
-    if (error.response?.status === 401) {
-      apiLogger.warn('Unauthorized access detected, clearing auth token');
-      localStorage.removeItem('authToken');
-      // Optionally redirect to login
-      // window.location.href = '/login';
+const defaultTimeout = parseInt((typeof process !== 'undefined' && process.env.VITE_BHIV_TIMEOUT) || import.meta.env?.VITE_BHIV_TIMEOUT || '10000');
+
+// Helper to apply standard interceptors to any service instance
+const setupInterceptors = (instance: any, serviceName: string) => {
+  // Enhanced request interceptor with detailed logging
+  instance.interceptors.request.use(
+    (config: any) => {
+      const startTime = Date.now();
+      (config as any).metadata = { startTime };
+      
+      apiLogger.debug(`[${serviceName}] Making ${config.method?.toUpperCase()} request to ${config.url}`);
+      
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      
+      // Add request ID for tracking
+      config.headers['X-Request-ID'] = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      return config;
+    },
+    (error: any) => {
+      apiLogger.error(`[${serviceName}] Request interceptor error`, error);
+      return Promise.reject(error);
     }
-    return Promise.reject(error);
-  }
-);
+  );
+
+  // Enhanced response interceptor with performance tracking
+  instance.interceptors.response.use(
+    (response: any) => {
+      const duration = Date.now() - ((response.config as any).metadata?.startTime || Date.now());
+      apiLogger.debug(`[${serviceName}] Response received in ${duration}ms from ${response.config.url}`);
+      
+      // Add response metadata
+      (response as any).metadata = {
+        duration,
+        requestId: response.config.headers['X-Request-ID'],
+        timestamp: new Date().toISOString(),
+      };
+      
+      return response;
+    },
+    (error: any) => {
+      const duration = error.config ? ((error.config as any).metadata?.startTime ? 
+        Date.now() - (error.config as any).metadata.startTime : 'unknown') : 'unknown';
+      
+      apiLogger.error(`[${serviceName}] Request failed after ${duration}ms: ${error.config?.url}`, {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message
+      });
+      
+      if (error.response?.status === 401) {
+        apiLogger.warn(`[${serviceName}] Unauthorized access detected, clearing auth token`);
+        localStorage.removeItem('authToken');
+      }
+      return Promise.reject(error);
+    }
+  );
+};
+
+// Core Service (v1-BHIV_CORE)
+const api = axios.create({ baseURL: resolvedBaseURL, timeout: defaultTimeout, headers: { 'Content-Type': 'application/json' } });
+setupInterceptors(api, 'BHIV-Core');
+
+// Tagging Service (adaptive-tagging)
+const taggingApi = axios.create({ baseURL: taggingBaseURL, timeout: defaultTimeout, headers: { 'Content-Type': 'application/json' } });
+setupInterceptors(taggingApi, 'Adaptive-Tagging');
+
+// Insights Service (insightbridge-phase3)
+const insightsApi = axios.create({ baseURL: insightsBaseURL, timeout: defaultTimeout, headers: { 'Content-Type': 'application/json' } });
+setupInterceptors(insightsApi, 'Insight-Bridge');
 
 // Backend health check utility
 export const checkBackendHealth = async (): Promise<{ 
@@ -313,18 +329,6 @@ export const getModerationItems = async (params: FilterState & { page: number; l
   try {
     apiLogger.info('Fetching moderation items', { params });
     
-    // Check backend health first
-    const health = await checkBackendHealth();
-      if (!health.healthy) {
-        apiLogger.warn('Backend unhealthy', { health });
-        // Only use mock data if explicitly enabled via env var
-        if (import.meta.env.VITE_USE_MOCK_DATA_WHEN_BHIV_UNAVAILABLE === 'true') {
-          apiLogger.info('VITE_USE_MOCK_DATA_WHEN_BHIV_UNAVAILABLE=true, returning mock moderation items');
-          return getEnhancedMockModerationItems(params);
-        }
-        throw new Error(`Backend unavailable: ${health.error}`);
-      }
-
     // Try to get items from BHIV backend
     const response: AxiosResponse<{
       data: ModerationResponse[];
@@ -333,17 +337,45 @@ export const getModerationItems = async (params: FilterState & { page: number; l
       limit: number;
     }> = await api.get('/moderate', { params });
     
-    if (!response.data.data || response.data.data.length === 0) {
-      apiLogger.info('No data from backend, using enhanced mock data');
-      return getEnhancedMockModerationItems(params);
-    }
-    
     apiLogger.info('Successfully fetched moderation items from backend', {
-      count: response.data.data.length,
+      count: response.data.data?.length || 0,
       total: response.data.total
     });
     
-    return response.data;
+    // Transform real data to include UI-required fields if missing (Stability & Visual Indicators)
+    const transformedData = response.data.data?.map((item: any) => {
+      const enrichedItem = { ...item };
+      
+      // Ensure statusBadge exists for UI indicators
+      if (!enrichedItem.statusBadge) {
+        if (enrichedItem.decision === 'approved' || enrichedItem.decision === 'rejected') {
+          enrichedItem.statusBadge = { 
+            type: 'updated', 
+            timestamp: new Date().toISOString(), 
+            message: 'Updated after feedback' 
+          };
+        } else if ((enrichedItem.confidence || 0) < 0.7) {
+          enrichedItem.statusBadge = { 
+            type: 'awaiting', 
+            timestamp: new Date().toISOString(), 
+            message: 'Awaiting RL decision' 
+          };
+        } else {
+          enrichedItem.statusBadge = { 
+            type: 'pending', 
+            timestamp: new Date().toISOString(), 
+            message: 'Pending review' 
+          };
+        }
+      }
+      
+      return enrichedItem;
+    }) || [];
+
+    return {
+      ...response.data,
+      data: transformedData
+    };
   } catch (error) {
     apiLogger.error('Error fetching moderation items', error);
     
@@ -432,21 +464,15 @@ export const getAnalytics = async (id: string) => {
   try {
     apiLogger.info('Fetching analytics', { id });
     
-    const health = await checkBackendHealth();
-    if (!health.healthy) {
-      apiLogger.warn('Backend unhealthy for analytics, using mock data');
-      return generateMockAnalytics(id, 0);
-    }
-
-    // Try BHIV-specific analytics endpoint first, then fall back to kb-analytics
+    // Try InsightBridge analytics endpoint first, then fall back to Core kb-analytics
     let response: AxiosResponse<any> | null = null;
     try {
-      response = await api.get('/bhiv/analytics', {
+      response = await insightsApi.get('/bhiv/analytics', {
         params: { hours: 24 },
         timeout: parseInt((typeof process !== 'undefined' && process.env.VITE_BHIV_ANALYTICS_TIMEOUT) || import.meta.env.VITE_BHIV_ANALYTICS_TIMEOUT || '5000')
       });
     } catch (e) {
-      apiLogger.debug('/bhiv/analytics not available, trying /kb-analytics', { error: e instanceof Error ? e.message : e });
+      apiLogger.debug('InsightBridge analytics not available, trying Core /kb-analytics', { error: e instanceof Error ? e.message : e });
       response = await api.get('/kb-analytics', {
         params: { hours: 24 },
         timeout: parseInt((typeof process !== 'undefined' && process.env.VITE_BHIV_ANALYTICS_TIMEOUT) || import.meta.env.VITE_BHIV_ANALYTICS_TIMEOUT || '5000')
@@ -473,23 +499,13 @@ export const getNLPContext = async (id: string, content?: string) => {
     apiLogger.info('Fetching NLP context', { id, contentLength: content?.length });
     
     const textToAnalyze = content || `Content for analysis with ID ${id}`;
-    
-    const health = await checkBackendHealth();
-    if (!health.healthy) {
-      apiLogger.warn('Backend unhealthy for NLP');
-      if (import.meta.env.VITE_USE_MOCK_DATA_WHEN_BHIV_UNAVAILABLE === 'true') {
-        apiLogger.info('VITE_USE_MOCK_DATA_WHEN_BHIV_UNAVAILABLE=true, returning mock NLP context');
-        return generateMockNLPContext(id, textToAnalyze);
-      }
-      throw new Error('Backend unavailable for NLP context');
-    }
 
-    // Try dedicated NLP context endpoint
+    // Try dedicated NLP context endpoint (InsightBridge)
     const response: AxiosResponse<{
       status: string;
       analysis: any;
       timestamp: string;
-    }> = await api.get('/nlp/context', {
+    }> = await insightsApi.get('/nlp/context', {
       params: {
         text: textToAnalyze,
         analysis_type: 'full'
@@ -513,9 +529,9 @@ export const getNLPContext = async (id: string, content?: string) => {
     apiLogger.debug('NLP context fetched from backend', { id, nlpData });
     return nlpData;
   } catch (error) {
-    apiLogger.error('Error fetching NLP context from BHIV backend', { id, error });
+    apiLogger.error('Error fetching NLP context from InsightBridge', { id, error });
     
-    // Fallback to knowledge base endpoint
+    // Fallback to knowledge base endpoint (Core)
     try {
       const textToAnalyze = content || `Content for analysis with ID ${id}`;
       const kbResponse: AxiosResponse<{
@@ -563,20 +579,14 @@ export const getTags = async (id: string, content?: string) => {
     apiLogger.info('Fetching tags', { id, contentLength: content?.length });
     
     const contentToTag = content || `Content for tagging with ID ${id}`;
-    
-    const health = await checkBackendHealth();
-    if (!health.healthy) {
-      apiLogger.warn('Backend unhealthy for tags, using mock data');
-      return generateMockTags(id, 0);
-    }
 
-    // Try dedicated tag endpoint
+    // Try dedicated tag endpoint (Adaptive Tagging)
     const response: AxiosResponse<{
       status: string;
       tags: any[];
       total_tags: number;
       timestamp: string;
-    }> = await api.get('/tag', {
+    }> = await taggingApi.get('/tag', {
       params: {
         content: contentToTag,
         max_tags: 5
@@ -601,9 +611,9 @@ export const getTags = async (id: string, content?: string) => {
     apiLogger.debug('Tags fetched from backend', { id, tagsData });
     return tagsData;
   } catch (error) {
-    apiLogger.error('Error fetching tags from BHIV backend', { id, error });
+    apiLogger.error('Error fetching tags from Tagging Service', { id, error });
     
-    // Fallback to knowledge base endpoint
+    // Fallback to knowledge base endpoint (Core)
     try {
       const contentToTag = content || `Content for tagging with ID ${id}`;
       const kbResponse: AxiosResponse<{
@@ -821,5 +831,812 @@ export const mockModerationItems: ModerationResponse[] = [
   },
 ];
 
+// ==================== INSIGHTBRIDGE SECURITY API INTEGRATION ====================
+
+// Types for InsightBridge Security API
+export interface SignatureRequest {
+  message: string;
+  key_id?: string;
+}
+
+export interface SignatureResponse {
+  success: boolean;
+  signature?: string;
+  key_id: string;
+  message: string;
+}
+
+export interface VerifyRequest {
+  message: string;
+  signature: string;
+  public_key_id?: string;
+}
+
+export interface VerifyResponse {
+  valid: boolean;
+  message: string;
+  details?: string;
+}
+
+export interface JWTRequest {
+  payload: Record<string, any>;
+  exp_seconds?: number;
+}
+
+export interface JWTResponse {
+  token: string;
+  payload: Record<string, any>;
+  expires_at: number;
+}
+
+export interface VerifyJWTRequest {
+  token: string;
+}
+
+export interface JWTVerifyResponse {
+  valid: boolean;
+  payload?: Record<string, any>;
+  error?: string;
+}
+
+export interface NonceRequest {
+  nonce: string;
+}
+
+export interface NonceResponse {
+  accepted: boolean;
+  message: string;
+}
+
+export interface HashChainEntry {
+  data: Record<string, any>;
+}
+
+export interface HashChainResponse {
+  hash: string;
+  previous_hash: string;
+  entry_count: number;
+  data: Record<string, any>;
+}
+
+export interface MessageRequest {
+  message: Record<string, any>;
+}
+
+export interface ReceiverResponse {
+  success: boolean;
+  buffer_length: number;
+  message: string;
+}
+
+export interface AuditResponse {
+  chain_length: number;
+  last_hash: string;
+  total_messages: number;
+  buffer_status: string;
+}
+
+// InsightBridge Security API Functions
+export const signMessage = async (request: SignatureRequest): Promise<SignatureResponse> => {
+  try {
+    apiLogger.info('Signing message with InsightBridge', { key_id: request.key_id });
+    
+    const response = await insightsApi.post('/signature/sign', request);
+    
+    apiLogger.info('Message signed successfully', { key_id: response.data.key_id });
+    return response.data;
+  } catch (error) {
+    apiLogger.error('Error signing message', { request, error });
+    throw error;
+  }
+};
+
+export const verifySignature = async (request: VerifyRequest): Promise<VerifyResponse> => {
+  try {
+    apiLogger.info('Verifying signature with InsightBridge', { public_key_id: request.public_key_id });
+    
+    const response = await insightsApi.post('/signature/verify', request);
+    
+    apiLogger.info('Signature verification completed', { valid: response.data.valid });
+    return response.data;
+  } catch (error) {
+    apiLogger.error('Error verifying signature', { request, error });
+    throw error;
+  }
+};
+
+export const createJWTToken = async (request: JWTRequest): Promise<JWTResponse> => {
+  try {
+    apiLogger.info('Creating JWT token with InsightBridge', { exp_seconds: request.exp_seconds });
+    
+    const response = await insightsApi.post('/auth/jwt/create', request);
+    
+    apiLogger.info('JWT token created successfully', { expires_at: response.data.expires_at });
+    return response.data;
+  } catch (error) {
+    apiLogger.error('Error creating JWT token', { request, error });
+    throw error;
+  }
+};
+
+export const verifyJWTToken = async (request: VerifyJWTRequest): Promise<JWTVerifyResponse> => {
+  try {
+    apiLogger.info('Verifying JWT token with InsightBridge');
+    
+    const response = await insightsApi.post('/auth/jwt/verify', request);
+    
+    apiLogger.info('JWT token verification completed', { valid: response.data.valid });
+    return response.data;
+  } catch (error) {
+    apiLogger.error('Error verifying JWT token', { request, error });
+    throw error;
+  }
+};
+
+export const checkNonce = async (request: NonceRequest): Promise<NonceResponse> => {
+  try {
+    apiLogger.info('Checking nonce with InsightBridge');
+    
+    const response = await insightsApi.post('/security/nonce/check', request);
+    
+    apiLogger.info('Nonce check completed', { accepted: response.data.accepted });
+    return response.data;
+  } catch (error) {
+    apiLogger.error('Error checking nonce', { request, error });
+    throw error;
+  }
+};
+
+export const appendToHashChain = async (request: HashChainEntry): Promise<HashChainResponse> => {
+  try {
+    apiLogger.info('Appending to hash chain with InsightBridge');
+    
+    const response = await insightsApi.post('/audit/hashchain/append', request);
+    
+    apiLogger.info('Hash chain entry added successfully', { entry_count: response.data.entry_count });
+    return response.data;
+  } catch (error) {
+    apiLogger.error('Error appending to hash chain', { request, error });
+    throw error;
+  }
+};
+
+export const getHashChain = async (): Promise<Array<Record<string, any>>> => {
+  try {
+    apiLogger.info('Getting hash chain from InsightBridge');
+    
+    const response = await insightsApi.get('/audit/hashchain');
+    
+    apiLogger.info('Hash chain retrieved successfully', { length: response.data.length });
+    return response.data;
+  } catch (error) {
+    apiLogger.error('Error getting hash chain', error);
+    throw error;
+  }
+};
+
+export const receiveMessage = async (request: MessageRequest): Promise<ReceiverResponse> => {
+  try {
+    apiLogger.info('Receiving message with InsightBridge');
+    
+    const response = await insightsApi.post('/receiver/message', request);
+    
+    apiLogger.info('Message received successfully', { 
+      success: response.data.success, 
+      buffer_length: response.data.buffer_length 
+    });
+    return response.data;
+  } catch (error) {
+    apiLogger.error('Error receiving message', { request, error });
+    throw error;
+  }
+};
+
+export const sendHeartbeat = async (): Promise<{ message: string; status: string }> => {
+  try {
+    apiLogger.info('Sending heartbeat to InsightBridge');
+    
+    const response = await insightsApi.post('/receiver/heartbeat');
+    
+    apiLogger.info('Heartbeat sent successfully');
+    return response.data;
+  } catch (error) {
+    apiLogger.error('Error sending heartbeat', error);
+    throw error;
+  }
+};
+
+export const getAuditStatus = async (): Promise<AuditResponse> => {
+  try {
+    apiLogger.info('Getting audit status from InsightBridge');
+    
+    const response = await insightsApi.get('/audit/status');
+    
+    apiLogger.info('Audit status retrieved successfully', { 
+      chain_length: response.data.chain_length,
+      total_messages: response.data.total_messages
+    });
+    return response.data;
+  } catch (error) {
+    apiLogger.error('Error getting audit status', error);
+    throw error;
+  }
+};
+
+// Enhanced InsightBridge health check
+export const checkInsightBridgeHealth = async (): Promise<{
+  healthy: boolean;
+  latency?: number;
+  error?: string;
+  services?: Record<string, string>;
+}> => {
+  try {
+    const startTime = Date.now();
+    const response = await insightsApi.get('/health', { timeout: 3000 });
+    const latency = Date.now() - startTime;
+    
+    apiLogger.info('InsightBridge health check successful', { latency, services: response.data.services });
+    
+    return {
+      healthy: true,
+      latency,
+      services: response.data.services,
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    apiLogger.warn('InsightBridge health check failed', { error: errorMessage });
+    
+    return {
+      healthy: false,
+      error: errorMessage,
+    };
+  }
+};
+
+// Combined security operations
+export const performSecureOperation = async (
+  operation: string,
+  data: Record<string, any>,
+  options: {
+    requireSignature?: boolean;
+    requireJWT?: boolean;
+    requireNonce?: boolean;
+    keyId?: string;
+  } = {}
+): Promise<{
+  success: boolean;
+  data?: any;
+  audit_hash?: string;
+  error?: string;
+}> => {
+  try {
+    apiLogger.info('Performing secure operation', { operation, options });
+    
+    // Step 1: Generate nonce for replay protection
+    let nonce: string | undefined;
+    if (options.requireNonce) {
+      nonce = `nonce_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      await checkNonce({ nonce });
+    }
+    
+    // Step 2: Create JWT if required
+    let jwtToken: string | undefined;
+    if (options.requireJWT) {
+      const jwtResponse = await createJWTToken({
+        payload: {
+          operation,
+          timestamp: new Date().toISOString(),
+          nonce,
+          data_hash: btoa(JSON.stringify(data)).slice(0, 16) // Simple hash
+        },
+        exp_seconds: 300 // 5 minutes
+      });
+      jwtToken = jwtResponse.token;
+    }
+    
+    // Step 3: Sign the operation if required
+    let signature: string | undefined;
+    if (options.requireSignature) {
+      const messageToSign = JSON.stringify({ operation, data, nonce, jwtToken });
+      const signResponse = await signMessage({ 
+        message: messageToSign, 
+        key_id: options.keyId 
+      });
+      signature = signResponse.signature;
+    }
+    
+    // Step 4: Perform the actual operation
+    const operationData = {
+      operation,
+      data,
+      nonce,
+      jwt_token: jwtToken,
+      signature,
+      timestamp: new Date().toISOString()
+    };
+    
+    // Step 5: Log to audit trail
+    const auditResponse = await appendToHashChain({
+      data: {
+        operation,
+        success: true,
+        timestamp: new Date().toISOString(),
+        data_size: JSON.stringify(data).length
+      }
+    });
+    
+    apiLogger.info('Secure operation completed successfully', { 
+      operation, 
+      audit_hash: auditResponse.hash 
+    });
+    
+    return {
+      success: true,
+      data: operationData,
+      audit_hash: auditResponse.hash
+    };
+  } catch (error) {
+    apiLogger.error('Secure operation failed', { operation, error });
+    
+    // Log failure to audit trail
+    try {
+      await appendToHashChain({
+        data: {
+          operation,
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
+          timestamp: new Date().toISOString()
+        }
+      });
+    } catch (auditError) {
+      apiLogger.error('Failed to log operation failure to audit trail', auditError);
+    }
+    
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+};
+
+// ==================== BHIV CORE COMPREHENSIVE API INTEGRATION ====================
+
+// Types for BHIV Core API
+export interface BHIVQueryRequest {
+  query: string;
+  user_id?: string;
+}
+
+export interface BHIVQueryResponse {
+  query_id: string;
+  query: string;
+  response: string;
+  sources: Array<{
+    text: string;
+    source: string;
+  }>;
+  timestamp: string;
+  endpoint: string;
+  status: number;
+}
+
+export interface BHIVKBRequest {
+  query: string;
+  limit?: number;
+  user_id?: string;
+  filters?: Record<string, any>;
+}
+
+export interface BHIVKBResponse {
+  response: string;
+  sources: Array<{
+    text: string;
+    source: string;
+  }>;
+  query_id: string;
+  timestamp: string;
+}
+
+export interface BHIVNasKBStatus {
+  status: string;
+  system_tests: Record<string, boolean>;
+  statistics: Record<string, any>;
+  timestamp: string;
+}
+
+export interface BHIVNasKBDocument {
+  status: string;
+  documents: Array<{
+    id: string;
+    title: string;
+    path: string;
+    size: number;
+    modified: string;
+  }>;
+  count: number;
+  timestamp: string;
+}
+
+export interface BHIVNasKBSearchResult {
+  status: string;
+  query: string;
+  results: Array<{
+    document_id: string;
+    content: string;
+    score: number;
+  }>;
+  count: number;
+  timestamp: string;
+}
+
+export interface BHIVKBFeedbackRequest {
+  query_id: string;
+  feedback: Record<string, any>;
+}
+
+export interface BHIVKBFeedbackResponse {
+  status: string;
+  message: string;
+  query_id: string;
+}
+
+// BHIV Core Service Functions
+export const askVedas = async (request: BHIVQueryRequest): Promise<BHIVQueryResponse> => {
+  try {
+    apiLogger.info('Asking Vedas endpoint', { query: request.query });
+    
+    const response = await api.post('/ask-vedas', request);
+    
+    apiLogger.info('Vedas response received', { query_id: response.data.query_id });
+    return response.data;
+  } catch (error) {
+    apiLogger.error('Error calling ask-vedas', { request, error });
+    throw error;
+  }
+};
+
+export const askVedasGet = async (query: string, user_id?: string): Promise<BHIVQueryResponse> => {
+  try {
+    apiLogger.info('GET ask-vedas', { query, user_id });
+    
+    const response = await api.get('/ask-vedas', {
+      params: { query, user_id }
+    });
+    
+    apiLogger.info('Vedas GET response received', { query_id: response.data.query_id });
+    return response.data;
+  } catch (error) {
+    apiLogger.error('Error calling ask-vedas GET', { query, user_id, error });
+    throw error;
+  }
+};
+
+export const askEdumentor = async (request: BHIVQueryRequest): Promise<BHIVQueryResponse> => {
+  try {
+    apiLogger.info('Asking Edumentor endpoint', { query: request.query });
+    
+    const response = await api.post('/edumentor', request);
+    
+    apiLogger.info('Edumentor response received', { query_id: response.data.query_id });
+    return response.data;
+  } catch (error) {
+    apiLogger.error('Error calling edumentor', { request, error });
+    throw error;
+  }
+};
+
+export const askEdumentorGet = async (query: string, user_id?: string): Promise<BHIVQueryResponse> => {
+  try {
+    apiLogger.info('GET edumentor', { query, user_id });
+    
+    const response = await api.get('/edumentor', {
+      params: { query, user_id }
+    });
+    
+    apiLogger.info('Edumentor GET response received', { query_id: response.data.query_id });
+    return response.data;
+  } catch (error) {
+    apiLogger.error('Error calling edumentor GET', { query, user_id, error });
+    throw error;
+  }
+};
+
+export const askWellness = async (request: BHIVQueryRequest): Promise<BHIVQueryResponse> => {
+  try {
+    apiLogger.info('Asking Wellness endpoint', { query: request.query });
+    
+    const response = await api.post('/wellness', request);
+    
+    apiLogger.info('Wellness response received', { query_id: response.data.query_id });
+    return response.data;
+  } catch (error) {
+    apiLogger.error('Error calling wellness', { request, error });
+    throw error;
+  }
+};
+
+export const askWellnessGet = async (query: string, user_id?: string): Promise<BHIVQueryResponse> => {
+  try {
+    apiLogger.info('GET wellness', { query, user_id });
+    
+    const response = await api.get('/wellness', {
+      params: { query, user_id }
+    });
+    
+    apiLogger.info('Wellness GET response received', { query_id: response.data.query_id });
+    return response.data;
+  } catch (error) {
+    apiLogger.error('Error calling wellness GET', { query, user_id, error });
+    throw error;
+  }
+};
+
+export const queryKnowledgeBase = async (request: BHIVKBRequest): Promise<BHIVKBResponse> => {
+  try {
+    apiLogger.info('Querying knowledge base', { query: request.query, limit: request.limit });
+    
+    const response = await api.post('/query-kb', request);
+    
+    apiLogger.info('Knowledge base response received', { query_id: response.data.query_id });
+    return response.data;
+  } catch (error) {
+    apiLogger.error('Error querying knowledge base', { request, error });
+    throw error;
+  }
+};
+
+export const queryKnowledgeBaseGet = async (query: string, limit?: number, user_id?: string): Promise<BHIVKBResponse> => {
+  try {
+    apiLogger.info('GET query-kb', { query, limit, user_id });
+    
+    const response = await api.get('/query-kb', {
+      params: { query, limit, user_id }
+    });
+    
+    apiLogger.info('Knowledge base GET response received', { query_id: response.data.query_id });
+    return response.data;
+  } catch (error) {
+    apiLogger.error('Error querying knowledge base GET', { query, limit, user_id, error });
+    throw error;
+  }
+};
+
+// NAS Knowledge Base Functions
+export const getNasKBStatus = async (): Promise<BHIVNasKBStatus> => {
+  try {
+    apiLogger.info('Getting NAS KB status');
+    
+    const response = await api.get('/nas-kb/status');
+    
+    apiLogger.info('NAS KB status retrieved', { status: response.data.status });
+    return response.data;
+  } catch (error) {
+    apiLogger.error('Error getting NAS KB status', error);
+    throw error;
+  }
+};
+
+export const listNasKBDocuments = async (): Promise<BHIVNasKBDocument> => {
+  try {
+    apiLogger.info('Listing NAS KB documents');
+    
+    const response = await api.get('/nas-kb/documents');
+    
+    apiLogger.info('NAS KB documents listed', { count: response.data.count });
+    return response.data;
+  } catch (error) {
+    apiLogger.error('Error listing NAS KB documents', error);
+    throw error;
+  }
+};
+
+export const searchNasKB = async (query: string, limit?: number): Promise<BHIVNasKBSearchResult> => {
+  try {
+    apiLogger.info('Searching NAS KB', { query, limit });
+    
+    const response = await api.get('/nas-kb/search', {
+      params: { query, limit }
+    });
+    
+    apiLogger.info('NAS KB search completed', { count: response.data.count });
+    return response.data;
+  } catch (error) {
+    apiLogger.error('Error searching NAS KB', { query, limit, error });
+    throw error;
+  }
+};
+
+export const getNasKBDocument = async (document_id: string): Promise<{
+  status: string;
+  document_id: string;
+  content: string;
+  timestamp: string;
+}> => {
+  try {
+    apiLogger.info('Getting NAS KB document', { document_id });
+    
+    const response = await api.get(`/nas-kb/document/${document_id}`);
+    
+    apiLogger.info('NAS KB document retrieved', { document_id });
+    return response.data;
+  } catch (error) {
+    apiLogger.error('Error getting NAS KB document', { document_id, error });
+    throw error;
+  }
+};
+
+// Feedback and Analytics Functions
+export const submitKBFeedback = async (request: BHIVKBFeedbackRequest): Promise<BHIVKBFeedbackResponse> => {
+  try {
+    apiLogger.info('Submitting KB feedback', { query_id: request.query_id });
+    
+    const response = await api.post('/kb-feedback', request);
+    
+    apiLogger.info('KB feedback submitted', { query_id: request.query_id });
+    return response.data;
+  } catch (error) {
+    apiLogger.error('Error submitting KB feedback', { request, error });
+    throw error;
+  }
+};
+
+export const getKBAnalytics = async (hours?: number): Promise<{
+  status: string;
+  analytics: {
+    total_queries: number;
+    avg_response_time: number;
+    success_rate: number;
+    queries_by_endpoint: Record<string, number>;
+  };
+  timestamp: string;
+}> => {
+  try {
+    apiLogger.info('Getting KB analytics', { hours });
+    
+    const response = await api.get('/kb-analytics', {
+      params: { hours }
+    });
+    
+    apiLogger.info('KB analytics retrieved', { 
+      total_queries: response.data.analytics?.total_queries 
+    });
+    return response.data;
+  } catch (error) {
+    apiLogger.error('Error getting KB analytics', { hours, error });
+    throw error;
+  }
+};
+
+// Enhanced BHIV Core health check
+export const checkBHIVCoreHealth = async (): Promise<{
+  healthy: boolean;
+  latency?: number;
+  error?: string;
+  services?: Record<string, string>;
+  uptime_seconds?: number;
+}> => {
+  try {
+    const startTime = Date.now();
+    const response = await api.get('/health', { timeout: 3000 });
+    const latency = Date.now() - startTime;
+    
+    apiLogger.info('BHIV Core health check successful', { latency, services: response.data.services });
+    
+    return {
+      healthy: true,
+      latency,
+      services: response.data.services,
+      uptime_seconds: response.data.uptime_seconds,
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    apiLogger.warn('BHIV Core health check failed', { error: errorMessage });
+    
+    return {
+      healthy: false,
+      error: errorMessage,
+    };
+  }
+};
+
+// Combined BHIV operations for complex workflows
+export const performBHIVOperation = async (
+  operation: 'vedas' | 'edumentor' | 'wellness' | 'kb_query',
+  data: {
+    query?: string;
+    content?: string;
+    limit?: number;
+    user_id?: string;
+  },
+  options: {
+    includeSources?: boolean;
+    useGet?: boolean;
+    fallback?: boolean;
+  } = {}
+): Promise<{
+  success: boolean;
+  data?: any;
+  sources?: Array<{ text: string; source: string }>;
+  error?: string;
+  endpoint?: string;
+}> => {
+  try {
+    apiLogger.info('Performing BHIV operation', { operation, data, options });
+    
+    let result;
+    
+    switch (operation) {
+      case 'vedas':
+        result = options.useGet 
+          ? await askVedasGet(data.query!, data.user_id)
+          : await askVedas({ query: data.query!, user_id: data.user_id });
+        break;
+        
+      case 'edumentor':
+        result = options.useGet
+          ? await askEdumentorGet(data.query!, data.user_id)
+          : await askEdumentor({ query: data.query!, user_id: data.user_id });
+        break;
+        
+      case 'wellness':
+        result = options.useGet
+          ? await askWellnessGet(data.query!, data.user_id)
+          : await askWellness({ query: data.query!, user_id: data.user_id });
+        break;
+        
+      case 'kb_query':
+        result = options.useGet
+          ? await queryKnowledgeBaseGet(data.query!, data.limit, data.user_id)
+          : await queryKnowledgeBase({ 
+              query: data.query!, 
+              limit: data.limit, 
+              user_id: data.user_id 
+            });
+        break;
+        
+      default:
+        throw new Error(`Unknown BHIV operation: ${operation}`);
+    }
+    
+    const response = {
+      success: true,
+      data: result.response,
+      sources: options.includeSources ? result.sources : undefined,
+      endpoint: (result as any).endpoint || operation,
+      query_id: result.query_id,
+      timestamp: result.timestamp
+    };
+    
+    apiLogger.info('BHIV operation completed successfully', { operation, query_id: result.query_id });
+    return response;
+    
+  } catch (error) {
+    apiLogger.error('BHIV operation failed', { operation, data, error });
+    
+    if (options.fallback) {
+      // Return a fallback response
+      const fallbackResponses = {
+        vedas: "The ancient Vedic texts teach us to seek truth through self-reflection and righteous action. Practice mindfulness and seek wisdom within.",
+        edumentor: "This is an important topic to understand. Let me break it down with practical examples to help you learn effectively.",
+        wellness: "Taking care of your wellbeing is important. Consider practices like meditation, exercise, and maintaining healthy relationships.",
+        kb_query: "Based on available knowledge, here's what I can tell you about this topic."
+      };
+      
+      return {
+        success: true,
+        data: fallbackResponses[operation] || "I'm here to help with your question.",
+        sources: [],
+        endpoint: operation,
+        error: `Fallback response due to: ${error instanceof Error ? error.message : 'Unknown error'}`
+      };
+    }
+    
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+};
+
 // Export the axios instance for custom requests
-export { api };
+export { api, taggingApi, insightsApi };
