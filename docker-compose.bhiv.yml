@@ -1,0 +1,12 @@
+version: '3.8'
+services:
+  bhiv-core:
+    image: python:3.11-slim
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./BHIV_CORE:/app
+    working_dir: /app
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: /bin/sh -c "pip install --no-cache-dir -r requirements.txt && python simple_api_minimal.py"

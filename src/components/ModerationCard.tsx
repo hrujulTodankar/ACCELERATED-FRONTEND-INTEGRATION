@@ -43,9 +43,24 @@ const ModerationCard: React.FC<ModerationCardProps> = ({ content, onFeedback, lo
 
   return (
     <div 
-      className="bg-white rounded-lg shadow p-6 mb-4 hover:shadow-md transition-shadow duration-200 cursor-pointer"
+      className={`bg-white rounded-lg shadow p-6 mb-4 hover:shadow-md transition-shadow duration-200 cursor-pointer ${
+        content.statusBadge?.type === 'updated' ? 'ring-2 ring-green-300 animate-pulse-fast' : ''
+      }`}
       onClick={onClick}
     >
+      {/* Visual indicator for RL status */}
+      {content.statusBadge && (
+        <div className="mb-3">
+          <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-semibold ${
+            content.statusBadge.type === 'awaiting' ? 'bg-yellow-100 text-yellow-800' : 'bg-blue-100 text-blue-800'
+          }`}>
+            {content.statusBadge.type === 'awaiting' ? 'Awaiting RL decision' : 'Updated after feedback'}
+          </span>
+          {content.statusBadge.message && (
+            <span className="ml-2 text-xs text-gray-500">{content.statusBadge.message}</span>
+          )}
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center space-x-3">

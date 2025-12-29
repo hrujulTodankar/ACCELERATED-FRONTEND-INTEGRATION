@@ -1,0 +1,246 @@
+{
+  "timestamp": "2025-12-29T02:39:16.279Z",
+  "base": "http://localhost:8070",
+  "results": [
+    {
+      "id": "harmless_content_001",
+      "scenario": "This is a positive message about community buildin",
+      "apiCalls": [],
+      "errors": [
+        "GET /moderate: Request failed with status code 502",
+        "POST /feedback: Request failed with status code 502",
+        "GET /kb-analytics: Request failed with status code 502",
+        "GET /nlp/context: Request failed with status code 502",
+        "GET /tag: Request failed with status code 502"
+      ]
+    },
+    {
+      "id": "spam_content_002",
+      "scenario": "Click here to win $1000000! Limited time offer! Bu",
+      "apiCalls": [],
+      "errors": [
+        "GET /moderate: Request failed with status code 502",
+        "POST /feedback: Request failed with status code 502",
+        "GET /kb-analytics: Request failed with status code 502",
+        "GET /nlp/context: Request failed with status code 502",
+        "GET /tag: Request failed with status code 502"
+      ]
+    },
+    {
+      "id": "neutral_content_003",
+      "scenario": "The weather is nice today. I went for a walk in th",
+      "apiCalls": [],
+      "errors": [
+        "GET /moderate: Request failed with status code 502",
+        "POST /feedback: Request failed with status code 502",
+        "GET /kb-analytics: Request failed with status code 502",
+        "GET /nlp/context: Request failed with status code 502",
+        "GET /tag: Request failed with status code 502"
+      ]
+    },
+    {
+      "id": "borderline_content_004",
+      "scenario": "This might be inappropriate for some audiences but",
+      "apiCalls": [],
+      "errors": [
+        "GET /moderate: Request failed with status code 502",
+        "POST /feedback: Request failed with status code 502",
+        "GET /kb-analytics: Request failed with status code 502",
+        "GET /nlp/context: Request failed with status code 502",
+        "GET /tag: Request failed with status code 502"
+      ]
+    },
+    {
+      "id": "educational_content_005",
+      "scenario": "Machine learning algorithms can process large data",
+      "apiCalls": [],
+      "errors": [
+        "GET /moderate: Request failed with status code 502",
+        "POST /feedback: Request failed with status code 502",
+        "GET /kb-analytics: Request failed with status code 502",
+        "GET /nlp/context: Request failed with status code 502",
+        "GET /tag: Request failed with status code 502"
+      ]
+    },
+    {
+      "id": "copyright_content_006",
+      "scenario": "Here is the complete text of a copyrighted novel t",
+      "apiCalls": [],
+      "errors": [
+        "GET /moderate: Request failed with status code 502",
+        "POST /feedback: Request failed with status code 502",
+        "GET /kb-analytics: Request failed with status code 502",
+        "GET /nlp/context: Request failed with status code 502",
+        "GET /tag: Request failed with status code 502"
+      ]
+    },
+    {
+      "id": "promotional_content_007",
+      "scenario": "Check out our new product launch! Limited time dis",
+      "apiCalls": [],
+      "errors": [
+        "GET /moderate: Request failed with status code 502",
+        "POST /feedback: Request failed with status code 502",
+        "GET /kb-analytics: Request failed with status code 502",
+        "GET /nlp/context: Request failed with status code 502",
+        "GET /tag: Request failed with status code 502"
+      ]
+    },
+    {
+      "id": "technical_content_008",
+      "scenario": "The API endpoint returns a 404 error when the reso",
+      "apiCalls": [],
+      "errors": [
+        "GET /moderate: Request failed with status code 502",
+        "POST /feedback: Request failed with status code 502",
+        "GET /kb-analytics: Request failed with status code 502",
+        "GET /nlp/context: Request failed with status code 502",
+        "GET /tag: Request failed with status code 502"
+      ]
+    },
+    {
+      "id": "controversial_content_009",
+      "scenario": "Political opinions that some might find divisive o",
+      "apiCalls": [],
+      "errors": [
+        "GET /moderate: Request failed with status code 502",
+        "POST /feedback: Request failed with status code 502",
+        "GET /kb-analytics: Request failed with status code 502",
+        "GET /nlp/context: Request failed with status code 502",
+        "GET /tag: Request failed with status code 502"
+      ]
+    },
+    {
+      "id": "medical_content_010",
+      "scenario": "This is not medical advice. Please consult a healt",
+      "apiCalls": [],
+      "errors": [
+        "GET /moderate: Request failed with status code 502",
+        "POST /feedback: Request failed with status code 502",
+        "GET /kb-analytics: Request failed with status code 502",
+        "GET /nlp/context: Request failed with status code 502",
+        "GET /tag: Request failed with status code 502"
+      ]
+    },
+    {
+      "id": "gaming_content_011",
+      "scenario": "Just achieved level 100 in my favorite RPG game! S",
+      "apiCalls": [],
+      "errors": [
+        "GET /moderate: Request failed with status code 502",
+        "POST /feedback: Request failed with status code 502",
+        "GET /kb-analytics: Request failed with status code 502",
+        "GET /nlp/context: Request failed with status code 502",
+        "GET /tag: Request failed with status code 502"
+      ]
+    },
+    {
+      "id": "recipe_content_012",
+      "scenario": "Here is a simple pasta recipe with tomatoes, garli",
+      "apiCalls": [],
+      "errors": [
+        "GET /moderate: Request failed with status code 502",
+        "POST /feedback: Request failed with status code 502",
+        "GET /kb-analytics: Request failed with status code 502",
+        "GET /nlp/context: Request failed with status code 502",
+        "GET /tag: Request failed with status code 502"
+      ]
+    },
+    {
+      "id": "news_content_013",
+      "scenario": "Breaking: Local government announces new infrastru",
+      "apiCalls": [],
+      "errors": [
+        "GET /moderate: Request failed with status code 502",
+        "POST /feedback: Request failed with status code 502",
+        "GET /kb-analytics: Request failed with status code 502",
+        "GET /nlp/context: Request failed with status code 502",
+        "GET /tag: Request failed with status code 502"
+      ]
+    },
+    {
+      "id": "programming_content_014",
+      "scenario": "How to implement a binary search algorithm in Pyth",
+      "apiCalls": [],
+      "errors": [
+        "GET /moderate: Request failed with status code 502",
+        "POST /feedback: Request failed with status code 502",
+        "GET /kb-analytics: Request failed with status code 502",
+        "GET /nlp/context: Request failed with status code 502",
+        "GET /tag: Request failed with status code 502"
+      ]
+    },
+    {
+      "id": "personal_attack_015",
+      "scenario": "You are a stupid person who knows nothing about th",
+      "apiCalls": [],
+      "errors": [
+        "GET /moderate: Request failed with status code 502",
+        "POST /feedback: Request failed with status code 502",
+        "GET /kb-analytics: Request failed with status code 502",
+        "GET /nlp/context: Request failed with status code 502",
+        "GET /tag: Request failed with status code 502"
+      ]
+    },
+    {
+      "id": "product_review_016",
+      "scenario": "This product has great features but poor customer ",
+      "apiCalls": [],
+      "errors": [
+        "GET /moderate: Request failed with status code 502",
+        "POST /feedback: Request failed with status code 502",
+        "GET /kb-analytics: Request failed with status code 502",
+        "GET /nlp/context: Request failed with status code 502",
+        "GET /tag: Request failed with status code 502"
+      ]
+    },
+    {
+      "id": "advertisement_017",
+      "scenario": "Exclusive offer! Buy one get one free! Click the l",
+      "apiCalls": [],
+      "errors": [
+        "GET /moderate: Request failed with status code 502",
+        "POST /feedback: Request failed with status code 502",
+        "GET /kb-analytics: Request failed with status code 502",
+        "GET /nlp/context: Request failed with status code 502",
+        "GET /tag: Request failed with status code 502"
+      ]
+    },
+    {
+      "id": "complaint_018",
+      "scenario": "I am disappointed with the service quality and wan",
+      "apiCalls": [],
+      "errors": [
+        "GET /moderate: Request failed with status code 502",
+        "POST /feedback: Request failed with status code 502",
+        "GET /kb-analytics: Request failed with status code 502",
+        "GET /nlp/context: Request failed with status code 502",
+        "GET /tag: Request failed with status code 502"
+      ]
+    },
+    {
+      "id": "celebration_019",
+      "scenario": "Happy birthday to my best friend! Hope you have an",
+      "apiCalls": [],
+      "errors": [
+        "GET /moderate: Request failed with status code 502",
+        "POST /feedback: Request failed with status code 502",
+        "GET /kb-analytics: Request failed with status code 502",
+        "GET /nlp/context: Request failed with status code 502",
+        "GET /tag: Request failed with status code 502"
+      ]
+    },
+    {
+      "id": "question_content_020",
+      "scenario": "What are the best practices for web development in",
+      "apiCalls": [],
+      "errors": [
+        "GET /moderate: Request failed with status code 502",
+        "POST /feedback: Request failed with status code 502",
+        "GET /kb-analytics: Request failed with status code 502",
+        "GET /nlp/context: Request failed with status code 502",
+        "GET /tag: Request failed with status code 502"
+      ]
+    }
+  ]
+}

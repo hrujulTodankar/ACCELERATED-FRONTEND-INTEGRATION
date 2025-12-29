@@ -13,6 +13,7 @@ import {
   ErrorState,
 } from '../types';
 import * as apiService from '../services/apiService';
+import { useNotificationStore } from './notificationStore';
 
 const initialFilters: FilterState = {
   type: 'all',
@@ -137,17 +138,18 @@ export const useModerationStore = create<ModerationState>()(
           get().setError('feedback');
 
           const response = await apiService.submitFeedback(feedback);
-          
-          // Update the selected item with the feedback
+
+          // Update the selected item with the feedback and mark awaiting RL decision
           const { selectedItem } = get();
           if (selectedItem) {
             const updatedItem = {
               ...selectedItem,
-              // Update confidence based on feedback and update timestamp
-              confidence: 0.95, // High confidence after human feedback
+              confidence: typeof response.confidence === 'number' ? response.confidence : 0.95,
               timestamp: new Date().toISOString(),
+              statusBadge: { type: 'awaiting' as const, timestamp: new Date().toISOString(), message: 'Awaiting RL decision' },
+              rewardStatus: 'awaiting' as const,
             };
-            
+
             set(
               {
                 selectedItem: updatedItem,
@@ -158,8 +160,33 @@ export const useModerationStore = create<ModerationState>()(
               false,
               'submitFeedback'
             );
+
+            // Trigger RL processing in background (non-blocking).
+            (async () => {
+              try {
+                const action = feedback.thumbsUp ? 'approve' : 'reject';
+                const reward = await get().processRLReward(selectedItem.id, action as any);
+                // Notify user that RL update applied
+                useNotificationStore.getState().addNotification({
+                  title: 'RL Update Applied',
+                  message: `Item ${selectedItem.id} updated (reward: ${((reward.reward||0)*100).toFixed(1)}%)`,
+                  type: 'success',
+                  timeout: 5000
+                })
+              } catch (err) {
+                console.error('Background RL processing failed:', err);
+                useNotificationStore.getState().addNotification({
+                  title: 'RL Update Failed',
+                  message: `RL processing failed for ${selectedItem.id}`,
+                  type: 'error',
+                  timeout: 6000
+                })
+              }
+            })();
+            // Ensure polling for RL updates is active
+            get().startRLPolling();
           }
-          
+
           return;
         } catch (error) {
           let errorMessage = 'Failed to submit feedback';
@@ -341,6 +368,44 @@ export const useModerationStore = create<ModerationState>()(
         );
       },
 
+      // Polling support for RL updates
+      startRLPolling: () => {
+        // polling timer is kept in closure to avoid serialization
+        const stateAny: any = get();
+        if ((stateAny as any)._rlPollingActive) return;
+        (stateAny as any)._rlPollingActive = true;
+        (stateAny as any)._rlPollingTimer = setInterval(async () => {
+          try {
+            const awaiting = get().items.filter(i => (i as any).rewardStatus === 'awaiting');
+            for (const item of awaiting) {
+              try {
+                const latest = await apiService.getModerationItem(item.id);
+                if (latest && latest.id) {
+                  get().updateItemStatus(item.id, latest.statusBadge || { type: 'updated', message: 'Updated from backend', timestamp: new Date().toISOString() }, latest.rewardStatus as any);
+                }
+              } catch (e) {
+                // ignore individual item errors
+              }
+            }
+            // stop polling if nothing awaiting
+            if (awaiting.length === 0) {
+              get().stopRLPolling();
+            }
+          } catch (e) {
+            console.error('RL polling error', e);
+          }
+        }, 3000);
+      },
+
+      stopRLPolling: () => {
+        const stateAny: any = get();
+        if ((stateAny as any)._rlPollingTimer) {
+          clearInterval((stateAny as any)._rlPollingTimer);
+          (stateAny as any)._rlPollingTimer = null;
+        }
+        (stateAny as any)._rlPollingActive = false;
+      },
+
       // Enhanced RL confidence updates with reward calculation
       simulateRLUpdate: (id: string) => {
         const currentItem = get().items.find(item => item.id === id);
@@ -424,11 +489,24 @@ export const useModerationStore = create<ModerationState>()(
               false,
               'processRLReward'
             );
+            // Fire notification
+            useNotificationStore.getState().addNotification({
+              title: 'Updated after feedback',
+              message: `Item ${id} - confidence ${((reward.confidenceUpdate||0)+ (updatedItem.confidence- (reward.confidenceUpdate||0)) ).toFixed(2)}`,
+              type: 'info',
+              timeout: 6000
+            })
           }
           
           return reward;
         } catch (error) {
           console.error('Error processing RL reward:', error);
+          useNotificationStore.getState().addNotification({
+            title: 'RL Error',
+            message: `Failed to process RL reward for ${id}`,
+            type: 'error',
+            timeout: 6000
+          })
           throw error;
         }
       },

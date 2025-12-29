@@ -9,9 +9,12 @@ import {
 } from '../services/apiService';
 import { ModerationResponse, FeedbackResponse } from '../types';
 
-// Mock axios
-jest.mock('axios');
 import axios from 'axios';
+
+// By default tests mock axios; when running integration tests set BHIV_INTEGRATION=true
+if (!process.env.BHIV_INTEGRATION) {
+  jest.mock('axios');
+}
 
 // Test data for various content scenarios
 const testContentScenarios = [
@@ -161,29 +164,30 @@ describe('Comprehensive Content Moderation Flow Tests', () => {
   beforeEach(() => {
     // Reset all mocks before each test
     jest.clearAllMocks();
-    
-    // Mock successful API responses
-    (axios.get as jest.Mock).mockResolvedValue({
-      data: {
-        status: 'success',
-        data: [],
-        total: 0,
-        page: 1,
-        limit: 10
-      },
-      metadata: { duration: 150, timestamp: new Date().toISOString() }
-    });
+    // If not running integration mode, mock axios responses
+    if (!process.env.BHIV_INTEGRATION) {
+      (axios.get as jest.Mock).mockResolvedValue({
+        data: {
+          status: 'success',
+          data: [],
+          total: 0,
+          page: 1,
+          limit: 10
+        },
+        metadata: { duration: 150, timestamp: new Date().toISOString() }
+      });
 
-    (axios.post as jest.Mock).mockResolvedValue({
-      data: {
-        success: true,
-        confidence: 0.85,
-        timestamp: new Date().toISOString(),
-        feedbackId: 'feedback_123',
-        rlReward: 0.15
-      },
-      metadata: { duration: 200, timestamp: new Date().toISOString() }
-    });
+      (axios.post as jest.Mock).mockResolvedValue({
+        data: {
+          success: true,
+          confidence: 0.85,
+          timestamp: new Date().toISOString(),
+          feedbackId: 'feedback_123',
+          rlReward: 0.15
+        },
+        metadata: { duration: 200, timestamp: new Date().toISOString() }
+      });
+    }
   });
 
   afterEach(() => {
@@ -211,14 +215,16 @@ describe('Comprehensive Content Moderation Flow Tests', () => {
         }
       }));
 
-      (axios.get as jest.Mock).mockResolvedValueOnce({
-        data: {
-          data: mockItems,
-          total: mockItems.length,
-          page: 1,
-          limit: 10
-        }
-      });
+      if (!process.env.BHIV_INTEGRATION) {
+        (axios.get as jest.Mock).mockResolvedValueOnce({
+          data: {
+            data: mockItems,
+            total: mockItems.length,
+            page: 1,
+            limit: 10
+          }
+        });
+      }
 
       const response = await getModerationItems({
         type: 'all',
@@ -230,9 +236,13 @@ describe('Comprehensive Content Moderation Flow Tests', () => {
         limit: 10
       });
 
-      expect(response.data).toHaveLength(mockItems.length);
-      expect(response.total).toBe(mockItems.length);
-      expect(axios.get).toHaveBeenCalledWith('/moderate', expect.any(Object));
+      expect(response.data).toBeDefined();
+      expect(response.total).toBeDefined();
+      if (!process.env.BHIV_INTEGRATION) {
+        expect(response.data).toHaveLength(mockItems.length);
+        expect(response.total).toBe(mockItems.length);
+        expect(axios.get).toHaveBeenCalledWith('/moderate', expect.any(Object));
+      }
     });
 
     test('should handle feedback submission with RL reward integration', async () => {
@@ -253,11 +263,13 @@ describe('Comprehensive Content Moderation Flow Tests', () => {
       expect(response.id).toBeDefined();
       expect(response.timestamp).toBeDefined();
 
-      expect(axios.post).toHaveBeenCalledWith('/feedback', expect.objectContaining({
-        moderationId: 'content_001',
-        feedback: 'This moderation decision was helpful',
-        userId: 'test_user_123'
-      }));
+      if (!process.env.BHIV_INTEGRATION) {
+        expect(axios.post).toHaveBeenCalledWith('/feedback', expect.objectContaining({
+          moderationId: 'content_001',
+          feedback: 'This moderation decision was helpful',
+          userId: 'test_user_123'
+        }));
+      }
     });
 
     test('should fetch analytics data with proper transformation', async () => {
@@ -267,13 +279,15 @@ describe('Comprehensive Content Moderation Flow Tests', () => {
         success_rate: 0.87
       };
 
-      (axios.get as jest.Mock).mockResolvedValueOnce({
-        data: {
-          status: 'success',
-          analytics: mockAnalytics,
-          timestamp: new Date().toISOString()
-        }
-      });
+      if (!process.env.BHIV_INTEGRATION) {
+        (axios.get as jest.Mock).mockResolvedValueOnce({
+          data: {
+            status: 'success',
+            analytics: mockAnalytics,
+            timestamp: new Date().toISOString()
+          }
+        });
+      }
 
       const analytics = await getAnalytics('test_content_001');
 
@@ -306,9 +320,11 @@ describe('Comprehensive Content Moderation Flow Tests', () => {
         timestamp: new Date().toISOString()
       };
 
-      (axios.get as jest.Mock).mockResolvedValueOnce({
-        data: mockNLPResponse
-      });
+      if (!process.env.BHIV_INTEGRATION) {
+        (axios.get as jest.Mock).mockResolvedValueOnce({
+          data: mockNLPResponse
+        });
+      }
 
       const nlpContext = await getNLPContext('test_content_001', 'This is a positive message');
 
@@ -348,9 +364,11 @@ describe('Comprehensive Content Moderation Flow Tests', () => {
         timestamp: new Date().toISOString()
       };
 
-      (axios.get as jest.Mock).mockResolvedValueOnce({
-        data: mockTagsResponse
-      });
+      if (!process.env.BHIV_INTEGRATION) {
+        (axios.get as jest.Mock).mockResolvedValueOnce({
+          data: mockTagsResponse
+        });
+      }
 
       const tags = await getTags('test_content_001', 'Technology content about trending topics');
 
@@ -378,9 +396,11 @@ describe('Comprehensive Content Moderation Flow Tests', () => {
         timestamp: new Date().toISOString()
       };
 
-      (axios.post as jest.Mock).mockResolvedValueOnce({
-        data: mockRLResponse
-      });
+      if (!process.env.BHIV_INTEGRATION) {
+        (axios.post as jest.Mock).mockResolvedValueOnce({
+          data: mockRLResponse
+        });
+      }
 
       const reward = await simulateRLReward('content_001', 'approve');
 
@@ -390,12 +410,14 @@ describe('Comprehensive Content Moderation Flow Tests', () => {
         timestamp: expect.any(String)
       });
 
-      expect(axios.post).toHaveBeenCalledWith('/rl/reward', expect.objectContaining({
-        itemId: 'content_001',
-        action: 'approve',
-        timestamp: expect.any(String),
-        userId: 'system'
-      }));
+      if (!process.env.BHIV_INTEGRATION) {
+        expect(axios.post).toHaveBeenCalledWith('/rl/reward', expect.objectContaining({
+          itemId: 'content_001',
+          action: 'approve',
+          timestamp: expect.any(String),
+          userId: 'system'
+        }));
+      }
     });
 
     test('should handle RL reward errors gracefully', async () => {

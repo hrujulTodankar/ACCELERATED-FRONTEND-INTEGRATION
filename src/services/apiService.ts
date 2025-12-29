@@ -27,9 +27,13 @@ const apiLogger = {
 };
 
 // Create axios instance with enhanced configuration
+const resolvedBaseURL = (typeof process !== 'undefined' && process.env.BHIV_BASE_URL)
+  ? process.env.BHIV_BASE_URL
+  : (import.meta.env?.VITE_API_BASE_URL || 'http://localhost:8001');
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8001',
-  timeout: parseInt(import.meta.env.VITE_BHIV_TIMEOUT || '10000'),
+  baseURL: resolvedBaseURL,
+  timeout: parseInt((typeof process !== 'undefined' && process.env.VITE_BHIV_TIMEOUT) || import.meta.env?.VITE_BHIV_TIMEOUT || '10000'),
   headers: {
     'Content-Type': 'application/json',
   },
@@ -311,13 +315,15 @@ export const getModerationItems = async (params: FilterState & { page: number; l
     
     // Check backend health first
     const health = await checkBackendHealth();
-    if (!health.healthy) {
-      apiLogger.warn('Backend unhealthy, using mock data', { health });
-      if (import.meta.env.DEV) {
-        return getEnhancedMockModerationItems(params);
+      if (!health.healthy) {
+        apiLogger.warn('Backend unhealthy', { health });
+        // Only use mock data if explicitly enabled via env var
+        if (import.meta.env.VITE_USE_MOCK_DATA_WHEN_BHIV_UNAVAILABLE === 'true') {
+          apiLogger.info('VITE_USE_MOCK_DATA_WHEN_BHIV_UNAVAILABLE=true, returning mock moderation items');
+          return getEnhancedMockModerationItems(params);
+        }
+        throw new Error(`Backend unavailable: ${health.error}`);
       }
-      throw new Error(`Backend unavailable: ${health.error}`);
-    }
 
     // Try to get items from BHIV backend
     const response: AxiosResponse<{
@@ -341,9 +347,9 @@ export const getModerationItems = async (params: FilterState & { page: number; l
   } catch (error) {
     apiLogger.error('Error fetching moderation items', error);
     
-    // Enhanced fallback to mock data
-    if (import.meta.env.DEV || import.meta.env.VITE_USE_MOCK_DATA_WHEN_BHIV_UNAVAILABLE === 'true') {
-      apiLogger.info('Using enhanced mock data as fallback');
+    // Enhanced fallback to mock data only if explicitly enabled
+    if (import.meta.env.VITE_USE_MOCK_DATA_WHEN_BHIV_UNAVAILABLE === 'true') {
+      apiLogger.info('VITE_USE_MOCK_DATA_WHEN_BHIV_UNAVAILABLE=true, using enhanced mock data as fallback');
       return getEnhancedMockModerationItems(params);
     }
     
@@ -404,8 +410,11 @@ export const submitFeedback = async (feedback: Omit<FeedbackResponse, 'id' | 'ti
       comment: feedback.comment,
       timestamp: response.data.timestamp,
       userId: feedback.userId,
+      // Expose backend-provided RL reward and confidence for the frontend to react to
+      rlReward: (response.data as any).rlReward,
+      confidence: (response.data as any).confidence,
     };
-    
+
     apiLogger.info('Feedback submitted successfully', { result });
     return result;
   } catch (error) {
@@ -429,23 +438,29 @@ export const getAnalytics = async (id: string) => {
       return generateMockAnalytics(id, 0);
     }
 
-    const response: AxiosResponse<{
-      status: string;
-      analytics: any;
-      timestamp: string;
-    }> = await api.get('/kb-analytics', { 
-      params: { hours: 24 },
-      timeout: parseInt(import.meta.env.VITE_BHIV_ANALYTICS_TIMEOUT || '5000')
-    });
-    
+    // Try BHIV-specific analytics endpoint first, then fall back to kb-analytics
+    let response: AxiosResponse<any> | null = null;
+    try {
+      response = await api.get('/bhiv/analytics', {
+        params: { hours: 24 },
+        timeout: parseInt((typeof process !== 'undefined' && process.env.VITE_BHIV_ANALYTICS_TIMEOUT) || import.meta.env.VITE_BHIV_ANALYTICS_TIMEOUT || '5000')
+      });
+    } catch (e) {
+      apiLogger.debug('/bhiv/analytics not available, trying /kb-analytics', { error: e instanceof Error ? e.message : e });
+      response = await api.get('/kb-analytics', {
+        params: { hours: 24 },
+        timeout: parseInt((typeof process !== 'undefined' && process.env.VITE_BHIV_ANALYTICS_TIMEOUT) || import.meta.env.VITE_BHIV_ANALYTICS_TIMEOUT || '5000')
+      });
+    }
+
     const analytics = transformBHIVAnalytics(response.data.analytics, id);
     apiLogger.debug('Analytics fetched from backend', { id, analytics });
     return analytics;
   } catch (error) {
     apiLogger.error('Error fetching analytics from BHIV backend', { id, error });
     
-    if (import.meta.env.DEV || import.meta.env.VITE_USE_MOCK_DATA_WHEN_BHIV_UNAVAILABLE === 'true') {
-      apiLogger.info('Using enhanced mock analytics as fallback');
+    if (import.meta.env.VITE_USE_MOCK_DATA_WHEN_BHIV_UNAVAILABLE === 'true') {
+      apiLogger.info('VITE_USE_MOCK_DATA_WHEN_BHIV_UNAVAILABLE=true, using mock analytics as fallback');
       return generateMockAnalytics(id, 0);
     }
     
@@ -461,8 +476,12 @@ export const getNLPContext = async (id: string, content?: string) => {
     
     const health = await checkBackendHealth();
     if (!health.healthy) {
-      apiLogger.warn('Backend unhealthy for NLP, using mock data');
-      return generateMockNLPContext(id, textToAnalyze);
+      apiLogger.warn('Backend unhealthy for NLP');
+      if (import.meta.env.VITE_USE_MOCK_DATA_WHEN_BHIV_UNAVAILABLE === 'true') {
+        apiLogger.info('VITE_USE_MOCK_DATA_WHEN_BHIV_UNAVAILABLE=true, returning mock NLP context');
+        return generateMockNLPContext(id, textToAnalyze);
+      }
+      throw new Error('Backend unavailable for NLP context');
     }
 
     // Try dedicated NLP context endpoint
@@ -528,11 +547,11 @@ export const getNLPContext = async (id: string, content?: string) => {
     } catch (kbError) {
       apiLogger.error('Error fetching NLP context from knowledge base', { id, error: kbError });
       
-      if (import.meta.env.DEV || import.meta.env.VITE_USE_MOCK_DATA_WHEN_BHIV_UNAVAILABLE === 'true') {
-        const textToAnalyze = content || `Content for analysis ${id}`;
-        apiLogger.info('Using mock NLP context as fallback');
-        return generateMockNLPContext(id, textToAnalyze);
-      }
+        if (import.meta.env.VITE_USE_MOCK_DATA_WHEN_BHIV_UNAVAILABLE === 'true') {
+          const textToAnalyze = content || `Content for analysis ${id}`;
+          apiLogger.info('VITE_USE_MOCK_DATA_WHEN_BHIV_UNAVAILABLE=true, using mock NLP context as fallback');
+          return generateMockNLPContext(id, textToAnalyze);
+        }
       
       throw kbError;
     }
@@ -613,8 +632,8 @@ export const getTags = async (id: string, content?: string) => {
     } catch (kbError) {
       apiLogger.error('Error fetching tags from knowledge base', { id, error: kbError });
       
-      if (import.meta.env.DEV || import.meta.env.VITE_USE_MOCK_DATA_WHEN_BHIV_UNAVAILABLE === 'true') {
-        apiLogger.info('Using mock tags as fallback');
+      if (import.meta.env.VITE_USE_MOCK_DATA_WHEN_BHIV_UNAVAILABLE === 'true') {
+        apiLogger.info('VITE_USE_MOCK_DATA_WHEN_BHIV_UNAVAILABLE=true, using mock tags as fallback');
         return generateMockTags(id, 0);
       }
       
@@ -640,16 +659,17 @@ export const simulateRLReward = async (id: string, action: 'approve' | 'reject' 
     return response.data;
   } catch (error) {
     apiLogger.error('Error processing RL reward', { id, action, error });
-    
-    // Simulate successful reward for demo purposes
-    const simulatedReward = {
-      reward: Math.random() * 0.2 + 0.1, // Random reward between 0.1 and 0.3
-      confidenceUpdate: Math.random() * 0.1 + 0.05,
-      timestamp: new Date().toISOString()
-    };
-    
-    apiLogger.info('Using simulated RL reward', { id, action, reward: simulatedReward });
-    return simulatedReward;
+    // Only simulate RL reward in dev/fallback mode
+    if (import.meta.env.VITE_USE_MOCK_DATA_WHEN_BHIV_UNAVAILABLE === 'true') {
+      const simulatedReward = {
+        reward: Math.random() * 0.2 + 0.1,
+        confidenceUpdate: Math.random() * 0.1 + 0.05,
+        timestamp: new Date().toISOString()
+      };
+      apiLogger.info('VITE_USE_MOCK_DATA_WHEN_BHIV_UNAVAILABLE=true, returning simulated RL reward', { id, action, reward: simulatedReward });
+      return simulatedReward;
+    }
+    throw error;
   }
 };
 

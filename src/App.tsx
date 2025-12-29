@@ -2,6 +2,7 @@ import Dashboard from './components/Dashboard'
 import { ModerationProvider } from './store/moderationStore'
 // @ts-ignore
 import DarkVeil from './components/DarkVeil'
+import ToastContainer from './components/Toast'
 import './App.css'
 
 function App() {
@@ -25,6 +26,7 @@ function App() {
         {/* App content */}
         <div className="relative z-10">
           <Dashboard />
+          <ToastContainer />
         </div>
 
       </div>

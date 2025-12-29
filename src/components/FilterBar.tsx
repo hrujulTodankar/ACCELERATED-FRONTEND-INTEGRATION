@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Search, Filter, Settings, X } from 'lucide-react';
 
 interface FilterBarProps {
@@ -17,8 +17,18 @@ const FilterBar: React.FC<FilterBarProps> = ({ filters, onFilterChange, onSearch
     onFilterChange(newFilters);
   };
 
+  // Debounce search input to avoid excessive fetches
+  const searchRef = useRef<number | null>(null);
+  useEffect(() => {
+    return () => {
+      if (searchRef.current) window.clearTimeout(searchRef.current);
+    };
+  }, []);
+
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onSearch(e.target.value);
+    const value = e.target.value;
+    if (searchRef.current) window.clearTimeout(searchRef.current);
+    searchRef.current = window.setTimeout(() => onSearch(value), 400) as unknown as number;
   };
 
   const clearFilters = () => {
