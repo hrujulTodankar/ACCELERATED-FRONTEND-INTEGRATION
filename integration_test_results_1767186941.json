@@ -1,0 +1,43 @@
+{
+  "timestamp": 1767186936.4748976,
+  "tests_run": 5,
+  "tests_passed": 0,
+  "tests_failed": 5,
+  "test_details": [
+    {
+      "test_name": "BHIV Core Health",
+      "status": "FAIL",
+      "details": "Connection error: Cannot connect to host localhost:8080 ssl:default [The remote computer refused the network connection]",
+      "response_data": null,
+      "timestamp": 1767186938.8194773
+    },
+    {
+      "test_name": "Adaptive Tags Health",
+      "status": "FAIL",
+      "details": "Status: 404",
+      "response_data": null,
+      "timestamp": 1767186939.090197
+    },
+    {
+      "test_name": "BHIV Core Status",
+      "status": "FAIL",
+      "details": "Error: Cannot connect to host localhost:8080 ssl:default [The remote computer refused the network connection]",
+      "response_data": null,
+      "timestamp": 1767186941.3716662
+    },
+    {
+      "test_name": "Adaptive Tags Simulation",
+      "status": "FAIL",
+      "details": "Status: 404",
+      "response_data": null,
+      "timestamp": 1767186941.3737433
+    },
+    {
+      "test_name": "Integration Flow",
+      "status": "FAIL",
+      "details": "Adaptive tags status failed",
+      "response_data": null,
+      "timestamp": 1767186941.3753834
+    }
+  ]
+}

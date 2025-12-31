@@ -1,7 +1,7 @@
 const axios = require('axios');
 const fs = require('fs');
 
-const BASE = process.env.BHIV_BASE_URL || process.env.VITE_API_BASE_URL || 'http://localhost:8001';
+const BASE = process.env.BHIV_BASE_URL || process.env.VITE_API_BASE_URL || 'http://localhost:8002';
 const timeout = 10000;
 
 const scenarios = [

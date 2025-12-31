@@ -1,0 +1,74 @@
+{
+  "timestamp": 1767187004.762281,
+  "tests_run": 5,
+  "tests_passed": 3,
+  "tests_failed": 2,
+  "test_details": [
+    {
+      "test_name": "BHIV Core Health",
+      "status": "PASS",
+      "details": "Service is healthy",
+      "response_data": {
+        "status": "healthy",
+        "timestamp": "2025-12-31T13:16:44.778Z",
+        "service": "BHIV Core Service",
+        "version": "1.0.0"
+      },
+      "timestamp": 1767187004.7806487
+    },
+    {
+      "test_name": "Adaptive Tags Health",
+      "status": "FAIL",
+      "details": "Status: 404",
+      "response_data": null,
+      "timestamp": 1767187005.0478485
+    },
+    {
+      "test_name": "BHIV Core API",
+      "status": "PASS",
+      "details": "API endpoint working",
+      "response_data": {
+        "message": "BHIV Core Service API",
+        "version": "1.0.0",
+        "endpoints": [
+          "/health",
+          "/moderate",
+          "/moderate/:id",
+          "/feedback",
+          "/kb-analytics",
+          "/nlp/context",
+          "/tag",
+          "/query-kb"
+        ]
+      },
+      "timestamp": 1767187005.0499904
+    },
+    {
+      "test_name": "Adaptive Tags Thresholds",
+      "status": "FAIL",
+      "details": "Status: 401",
+      "response_data": null,
+      "timestamp": 1767187005.0631158
+    },
+    {
+      "test_name": "Integration Flow",
+      "status": "PASS",
+      "details": "Both services healthy",
+      "response_data": {
+        "adaptive_tags": {
+          "status": "ok",
+          "last_update_ts": null,
+          "tag_count": 0,
+          "sample_adaptations": {}
+        },
+        "bhiv_core": {
+          "status": "healthy",
+          "timestamp": "2025-12-31T13:16:45.065Z",
+          "service": "BHIV Core Service",
+          "version": "1.0.0"
+        }
+      },
+      "timestamp": 1767187005.0670886
+    }
+  ]
+}

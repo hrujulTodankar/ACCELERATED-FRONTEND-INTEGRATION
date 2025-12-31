@@ -452,8 +452,31 @@ export const submitFeedback = async (feedback: Omit<FeedbackResponse, 'id' | 'ti
   } catch (error) {
     apiLogger.error('Error submitting feedback', { feedback, error });
     
+    // Check if we should use mock data fallback
+    if (import.meta.env.VITE_USE_MOCK_DATA_WHEN_BHIV_UNAVAILABLE === 'true') {
+      apiLogger.info('VITE_USE_MOCK_DATA_WHEN_BHIV_UNAVAILABLE=true, using mock feedback response as fallback');
+      
+      // Return a mock successful response
+      const mockResult = {
+        id: `mock_feedback_${Date.now()}`,
+        thumbsUp: feedback.thumbsUp,
+        comment: feedback.comment,
+        timestamp: new Date().toISOString(),
+        userId: feedback.userId,
+        rlReward: Math.random() * 0.2 + 0.1, // Simulate RL reward
+        confidence: 0.85 + (Math.random() * 0.1), // Simulate confidence update
+      };
+      
+      apiLogger.info('Mock feedback submitted successfully', { result: mockResult });
+      return mockResult;
+    }
+    
     if (error instanceof Error && error.message.includes('timeout')) {
       throw new Error('Feedback submission timed out. Please try again.');
+    }
+    
+    if (error instanceof Error && (error.message.includes('Network Error') || error.message.includes('ECONNREFUSED') || error.message.includes('AxiosError'))) {
+      throw new Error('Unable to connect to the server. Please ensure the backend service is running, or enable mock data mode.');
     }
     
     throw error;
@@ -574,82 +597,197 @@ export const getNLPContext = async (id: string, content?: string) => {
   }
 };
 
+// Enhanced Tag Generation with InsightBridge Integration
 export const getTags = async (id: string, content?: string) => {
   try {
-    apiLogger.info('Fetching tags', { id, contentLength: content?.length });
+    apiLogger.info('Fetching enhanced tags', { id, contentLength: content?.length });
     
     const contentToTag = content || `Content for tagging with ID ${id}`;
+    let enrichedTags: any[] = [];
+    let primaryModel = 'bhiv-tag-generator';
 
-    // Try dedicated tag endpoint (Adaptive Tagging)
-    const response: AxiosResponse<{
-      status: string;
-      tags: any[];
-      total_tags: number;
-      timestamp: string;
-    }> = await taggingApi.get('/tag', {
-      params: {
-        content: contentToTag,
-        max_tags: 5
-      }
-    });
-    
-    const tagsData = {
-      id,
-      tags: response.data.tags?.map((tag: any) => ({
-        label: tag.tag,
-        confidence: tag.score,
-        category: tag.category
-      })) || [
-        { label: 'content', confidence: 0.9, category: 'general' },
-        { label: 'analyzed', confidence: 0.8, category: 'processing' }
-      ],
-      confidence: 0.85,
-      model: 'bhiv-tag-generator',
-      timestamp: response.data.timestamp,
-    };
-    
-    apiLogger.debug('Tags fetched from backend', { id, tagsData });
-    return tagsData;
-  } catch (error) {
-    apiLogger.error('Error fetching tags from Tagging Service', { id, error });
-    
-    // Fallback to knowledge base endpoint (Core)
+    // Phase 1: Try InsightBridge for enriched NLP-based tagging
     try {
-      const contentToTag = content || `Content for tagging with ID ${id}`;
-      const kbResponse: AxiosResponse<{
-        response: string;
-        sources: any[];
-        query_id: string;
-      }> = await api.post('/query-kb', {
-        query: `Generate relevant tags for the following content: ${contentToTag}`,
-        limit: 2,
-        user_id: 'frontend_user'
+      apiLogger.debug('Attempting InsightBridge enriched tagging', { id });
+      const insightResponse = await insightsApi.post('/nlp/analyze', {
+        text: contentToTag,
+        analysis_types: ['entities', 'topics', 'sentiment', 'keywords'],
+        extract_tags: true,
+        max_tags: 8
       });
       
-      const tagsData = {
-        id,
-        tags: [
-          { label: 'content', confidence: 0.9, category: 'general' },
-          { label: 'analyzed', confidence: 0.8, category: 'processing' }
-        ],
-        confidence: 0.85,
-        model: 'bhiv-knowledge-agent',
-        timestamp: new Date().toISOString(),
-      };
-      
-      apiLogger.debug('Tags fetched from knowledge base', { id, tagsData });
-      return tagsData;
-    } catch (kbError) {
-      apiLogger.error('Error fetching tags from knowledge base', { id, error: kbError });
-      
-      if (import.meta.env.VITE_USE_MOCK_DATA_WHEN_BHIV_UNAVAILABLE === 'true') {
-        apiLogger.info('VITE_USE_MOCK_DATA_WHEN_BHIV_UNAVAILABLE=true, using mock tags as fallback');
-        return generateMockTags(id, 0);
+      if (insightResponse.data && insightResponse.data.tags) {
+        enrichedTags = insightResponse.data.tags.map((tag: any) => ({
+          label: tag.label || tag.text,
+          confidence: tag.confidence || tag.score || 0.8,
+          category: tag.category || tag.type || 'insightbridge',
+          source: 'insightbridge'
+        }));
+        primaryModel = 'insightbridge-nlp-v2';
+        apiLogger.info('Successfully fetched enriched tags from InsightBridge', { id, tagCount: enrichedTags.length });
       }
-      
-      throw kbError;
+    } catch (insightError) {
+      apiLogger.debug('InsightBridge tagging failed, trying alternative methods', { id, error: insightError });
     }
+
+    // Phase 2: Try Adaptive Tagging Service for additional tags
+    if (enrichedTags.length < 5) {
+      try {
+        apiLogger.debug('Attempting Adaptive Tagging Service', { id });
+        const taggingResponse: AxiosResponse<{
+          status: string;
+          tags: any[];
+          total_tags: number;
+          timestamp: string;
+        }> = await taggingApi.get('/tag', {
+          params: {
+            content: contentToTag,
+            max_tags: Math.max(3, 8 - enrichedTags.length)
+          }
+        });
+        
+        if (taggingResponse.data.tags) {
+          const adaptiveTags = taggingResponse.data.tags.map((tag: any) => ({
+            label: tag.tag,
+            confidence: tag.score || 0.7,
+            category: tag.category || 'adaptive',
+            source: 'adaptive-tagging'
+          }));
+          
+          // Merge and deduplicate tags
+          enrichedTags = mergeAndDeduplicateTags([...enrichedTags, ...adaptiveTags]);
+          primaryModel = 'hybrid-insightbridge-adaptive';
+          apiLogger.info('Successfully enhanced tags with Adaptive Tagging', { id, totalTags: enrichedTags.length });
+        }
+      } catch (taggingError) {
+        apiLogger.debug('Adaptive tagging failed, proceeding with existing tags', { id, error: taggingError });
+      }
+    }
+
+    // Phase 3: Fallback to BHIV Core knowledge base
+    if (enrichedTags.length < 3) {
+      try {
+        apiLogger.debug('Attempting BHIV Core knowledge base tagging', { id });
+        const kbResponse: AxiosResponse<{
+          response: string;
+          sources: any[];
+          query_id: string;
+        }> = await api.post('/query-kb', {
+          query: `Analyze and generate relevant tags for: ${contentToTag}`,
+          limit: 3,
+          user_id: 'frontend_user'
+        });
+        
+        // Extract tags from knowledge base response
+        const kbTags = extractTagsFromText(kbResponse.data.response).map((label: string) => ({
+          label,
+          confidence: 0.6,
+          category: 'knowledge-base',
+          source: 'bhiv-core'
+        }));
+        
+        enrichedTags = mergeAndDeduplicateTags([...enrichedTags, ...kbTags]);
+        primaryModel = 'hybrid-enhanced';
+        apiLogger.info('Enhanced tags with BHIV Core knowledge base', { id, totalTags: enrichedTags.length });
+      } catch (kbError) {
+        apiLogger.debug('BHIV Core tagging failed, using existing tags', { id, error: kbError });
+      }
+    }
+
+    // Final fallback to mock data if no tags were generated
+    if (enrichedTags.length === 0) {
+      if (import.meta.env.VITE_USE_MOCK_DATA_WHEN_BHIV_UNAVAILABLE === 'true') {
+        apiLogger.info('Using mock tags as final fallback', { id });
+        const mockTags = generateMockTags(id, 0).tags;
+        enrichedTags = mockTags.map(tag => ({ ...tag, source: 'mock' }));
+        primaryModel = 'mock-fallback';
+      } else {
+        throw new Error('No tags could be generated from any backend service');
+      }
+    }
+
+    const tagsData = {
+      id,
+      tags: enrichedTags.slice(0, 8), // Limit to 8 tags for UI
+      confidence: Math.min(...enrichedTags.map(t => t.confidence)) || 0.75,
+      model: primaryModel,
+      timestamp: new Date().toISOString(),
+      metadata: {
+        totalSources: [...new Set(enrichedTags.map(t => t.source))].length,
+        averageConfidence: enrichedTags.reduce((sum, tag) => sum + tag.confidence, 0) / enrichedTags.length
+      }
+    };
+    
+    apiLogger.info('Enhanced tagging completed successfully', { 
+      id, 
+      tagsCount: tagsData.tags.length,
+      model: primaryModel,
+      sources: tagsData.metadata.totalSources
+    });
+    return tagsData;
+    
+  } catch (error) {
+    apiLogger.error('All tagging methods failed', { id, error });
+    
+    if (import.meta.env.VITE_USE_MOCK_DATA_WHEN_BHIV_UNAVAILABLE === 'true') {
+      apiLogger.info('Emergency fallback to mock tags');
+      const mockTags = generateMockTags(id, 0);
+      return {
+        ...mockTags,
+        tags: mockTags.tags.map(tag => ({ ...tag, source: 'emergency-mock' })),
+        model: 'emergency-mock'
+      };
+    }
+    
+    throw error;
   }
+};
+
+// Helper function to merge and deduplicate tags
+const mergeAndDeduplicateTags = (tags: any[]): any[] => {
+  const tagMap = new Map<string, any>();
+  
+  tags.forEach(tag => {
+    const key = tag.label.toLowerCase().trim();
+    const existing = tagMap.get(key);
+    
+    if (!existing || tag.confidence > existing.confidence) {
+      tagMap.set(key, {
+        label: tag.label,
+        confidence: tag.confidence,
+        category: tag.category || 'general',
+        source: tag.source || 'unknown'
+      });
+    }
+  });
+  
+  return Array.from(tagMap.values())
+    .sort((a, b) => b.confidence - a.confidence)
+    .slice(0, 10); // Keep top 10 tags
+};
+
+// Helper function to extract tags from text
+const extractTagsFromText = (text: string): string[] => {
+  if (!text || typeof text !== 'string') return [];
+  
+  // Simple keyword extraction
+  const words = text.toLowerCase()
+    .replace(/[^\w\s]/g, ' ')
+    .split(/\s+/)
+    .filter(word => word.length > 3)
+    .filter(word => !['that', 'this', 'with', 'from', 'they', 'have', 'been', 'were', 'said', 'each', 'which', 'their', 'time'].includes(word));
+  
+  // Count word frequency
+  const wordCount = words.reduce((acc, word) => {
+    acc[word] = (acc[word] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  
+  // Return top words as tags
+  return Object.entries(wordCount)
+    .sort(([,a], [,b]) => b - a)
+    .slice(0, 5)
+    .map(([word]) => word);
 };
 
 // Real-time RL reward integration
@@ -1507,13 +1645,15 @@ export const getKBAnalytics = async (hours?: number): Promise<{
   }
 };
 
-// Enhanced BHIV Core health check
+// Enhanced BHIV Core health check with comprehensive diagnostics
 export const checkBHIVCoreHealth = async (): Promise<{
   healthy: boolean;
   latency?: number;
   error?: string;
   services?: Record<string, string>;
   uptime_seconds?: number;
+  version?: string;
+  endpoints?: string[];
 }> => {
   try {
     const startTime = Date.now();
@@ -1527,6 +1667,8 @@ export const checkBHIVCoreHealth = async (): Promise<{
       latency,
       services: response.data.services,
       uptime_seconds: response.data.uptime_seconds,
+      version: response.data.version,
+      endpoints: response.data.endpoints || []
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -1536,6 +1678,255 @@ export const checkBHIVCoreHealth = async (): Promise<{
       healthy: false,
       error: errorMessage,
     };
+  }
+};
+
+// Comprehensive backend connectivity test
+export const testAllBackendConnections = async (): Promise<{
+  bhiv_core: { healthy: boolean; latency?: number; error?: string };
+  insightbridge: { healthy: boolean; latency?: number; error?: string };
+  tagging_service: { healthy: boolean; latency?: number; error?: string };
+  overall_status: 'all_healthy' | 'partial' | 'all_unhealthy';
+}> => {
+  apiLogger.info('Testing all backend connections');
+  
+  const tests = await Promise.allSettled([
+    checkBHIVCoreHealth(),
+    checkInsightBridgeHealth(),
+    checkBackendHealth() // Using existing health check for tagging service
+  ]);
+  
+  const bhiv_core = tests[0].status === 'fulfilled' ? tests[0].value : { healthy: false, error: tests[0].reason?.message };
+  const insightbridge = tests[1].status === 'fulfilled' ? tests[1].value : { healthy: false, error: tests[1].reason?.message };
+  const tagging_service = tests[2].status === 'fulfilled' ? tests[2].value : { healthy: false, error: tests[2].reason?.message };
+  
+  const healthyCount = [bhiv_core, insightbridge, tagging_service].filter(conn => conn.healthy).length;
+  let overall_status: 'all_healthy' | 'partial' | 'all_unhealthy';
+  
+  if (healthyCount === 3) overall_status = 'all_healthy';
+  else if (healthyCount === 0) overall_status = 'all_unhealthy';
+  else overall_status = 'partial';
+  
+  apiLogger.info('Backend connectivity test completed', { 
+    overall_status, 
+    healthy_services: healthyCount,
+    total_services: 3 
+  });
+  
+  return {
+    bhiv_core,
+    insightbridge,
+    tagging_service,
+    overall_status
+  };
+};
+
+// Enhanced content analysis combining multiple backends
+export const analyzeContentComprehensive = async (content: string, options: {
+  includeTags?: boolean;
+  includeNLP?: boolean;
+  includeAnalytics?: boolean;
+  includeSecurity?: boolean;
+} = {}) => {
+  const analysisId = `analysis_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  apiLogger.info('Starting comprehensive content analysis', { analysisId, contentLength: content.length, options });
+  
+  const results: any = {
+    analysisId,
+    content,
+    timestamp: new Date().toISOString(),
+    results: {}
+  };
+  
+  try {
+    // Parallel analysis from multiple sources
+    const analysisPromises = [];
+    
+    if (options.includeTags !== false) {
+      analysisPromises.push(
+        getTags(analysisId, content).then(tags => ({ type: 'tags', data: tags })).catch(err => ({ type: 'tags', error: err.message }))
+      );
+    }
+    
+    if (options.includeNLP !== false) {
+      analysisPromises.push(
+        getNLPContext(analysisId, content).then(nlp => ({ type: 'nlp', data: nlp })).catch(err => ({ type: 'nlp', error: err.message }))
+      );
+    }
+    
+    if (options.includeAnalytics) {
+      analysisPromises.push(
+        getAnalytics(analysisId).then(analytics => ({ type: 'analytics', data: analytics })).catch(err => ({ type: 'analytics', error: err.message }))
+      );
+    }
+    
+    if (options.includeSecurity) {
+      analysisPromises.push(
+        performSecureOperation('content_analysis', { content }, {
+          requireJWT: true,
+          requireNonce: true
+        }).then(security => ({ type: 'security', data: security })).catch(err => ({ type: 'security', error: err.message }))
+      );
+    }
+    
+    const analysisResults = await Promise.allSettled(analysisPromises);
+    
+    // Process results
+    analysisResults.forEach((result, index) => {
+      if (result.status === 'fulfilled') {
+        results.results[result.value.type] = result.value.data || { error: result.value.error };
+      } else {
+        const promise = analysisPromises[index] as Promise<any>;
+        promise.catch(err => {
+          results.results[err.type || 'unknown'] = { error: err.message };
+        });
+      }
+    });
+    
+    // Calculate overall confidence score
+    const successfulAnalyses = Object.values(results.results).filter((result: any) => !result.error);
+    results.overallConfidence = successfulAnalyses.length > 0 
+      ? successfulAnalyses.reduce((sum: number, result: any) => sum + (result.confidence || 0.7), 0) / successfulAnalyses.length
+      : 0.5;
+    
+    apiLogger.info('Comprehensive content analysis completed', { 
+      analysisId, 
+      successfulAnalyses: successfulAnalyses.length,
+      totalAnalyses: Object.keys(results.results).length,
+      overallConfidence: results.overallConfidence
+    });
+    
+    return results;
+    
+  } catch (error) {
+    apiLogger.error('Comprehensive content analysis failed', { analysisId, error });
+    throw error;
+  }
+};
+
+// Smart content routing based on backend availability
+export const smartContentProcessing = async (content: string, preferences: {
+  preferInsightBridge?: boolean;
+  preferBHIVCore?: boolean;
+  fallbackToMock?: boolean;
+} = {}) => {
+  const processingId = `smart_${Date.now()}`;
+  apiLogger.info('Starting smart content processing', { processingId, preferences });
+  
+  try {
+    // Check backend availability
+    const connectivity = await testAllBackendConnections();
+    
+    let selectedStrategy = 'mock'; // default
+    
+    if (connectivity.overall_status === 'all_healthy') {
+      selectedStrategy = preferences.preferInsightBridge ? 'insightbridge_first' : 'bhiv_first';
+    } else if (connectivity.overall_status === 'partial') {
+      if (connectivity.insightbridge.healthy && preferences.preferInsightBridge) {
+        selectedStrategy = 'insightbridge_only';
+      } else if (connectivity.bhiv_core.healthy) {
+        selectedStrategy = 'bhiv_only';
+      } else {
+        selectedStrategy = 'available_backend';
+      }
+    } else if (connectivity.overall_status === 'all_unhealthy' && preferences.fallbackToMock) {
+      selectedStrategy = 'mock_fallback';
+    }
+    
+    let result;
+    
+    switch (selectedStrategy) {
+      case 'insightbridge_first':
+        result = await performBHIVOperation('kb_query', { 
+          query: `Analyze and process: ${content}`,
+          limit: 3,
+          user_id: 'smart_processor'
+        }, { includeSources: true, fallback: preferences.fallbackToMock });
+        break;
+        
+      case 'bhiv_first':
+        result = await performBHIVOperation('kb_query', { 
+          query: `Analyze and process: ${content}`,
+          limit: 3,
+          user_id: 'smart_processor'
+        }, { includeSources: true, fallback: preferences.fallbackToMock });
+        break;
+        
+      case 'insightbridge_only':
+        // Use only InsightBridge endpoints
+        result = await insightsApi.post('/nlp/analyze', {
+          text: content,
+          analysis_types: ['full']
+        }).then(response => ({
+          success: true,
+          data: response.data,
+          endpoint: 'insightbridge',
+          strategy: 'insightbridge_only'
+        }));
+        break;
+        
+      case 'bhiv_only':
+        // Use only BHIV Core endpoints
+        result = await api.post('/query-kb', {
+          query: `Analyze and process: ${content}`,
+          limit: 3,
+          user_id: 'smart_processor'
+        }).then(response => ({
+          success: true,
+          data: response.data,
+          endpoint: 'bhiv_core',
+          strategy: 'bhiv_only'
+        }));
+        break;
+        
+      case 'mock_fallback':
+      default:
+        result = {
+          success: true,
+          data: {
+            response: `Smart processing of content: "${content.substring(0, 100)}${content.length > 100 ? '...' : ''}". Backend services are currently unavailable.`,
+            sources: [],
+            analysis: 'Mock analysis due to backend unavailability'
+          },
+          endpoint: 'mock',
+          strategy: 'mock_fallback'
+        };
+        break;
+    }
+    
+    apiLogger.info('Smart content processing completed', { 
+      processingId, 
+      strategy: selectedStrategy,
+      backendUsed: result.endpoint,
+      success: result.success
+    });
+    
+    return {
+      ...result,
+      processingId,
+      strategy: selectedStrategy,
+      connectivityStatus: connectivity.overall_status
+    };
+    
+  } catch (error) {
+    apiLogger.error('Smart content processing failed', { processingId, error });
+    
+    if (preferences.fallbackToMock) {
+      return {
+        success: true,
+        data: {
+          response: `Content processed with fallback: "${content.substring(0, 100)}${content.length > 100 ? '...' : ''}"`,
+          sources: [],
+          analysis: 'Fallback processing due to error'
+        },
+        endpoint: 'emergency_fallback',
+        strategy: 'emergency_fallback',
+        processingId,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+    
+    throw error;
   }
 };
 

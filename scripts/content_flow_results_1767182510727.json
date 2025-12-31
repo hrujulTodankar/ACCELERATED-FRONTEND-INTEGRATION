@@ -1,0 +1,1706 @@
+{
+  "timestamp": "2025-12-31T12:01:50.725Z",
+  "base": "http://localhost:8002",
+  "results": [
+    {
+      "id": "harmless_content_001",
+      "scenario": "This is a positive message about community buildin",
+      "apiCalls": [
+        "GET /moderate",
+        "POST /feedback",
+        "GET /kb-analytics",
+        "GET /nlp/context",
+        "GET /tag"
+      ],
+      "errors": [],
+      "moderation": {
+        "data": [
+          {
+            "id": "mod_1_0",
+            "content": "Mock content 1 for moderation",
+            "decision": "pending",
+            "confidence": 0.7,
+            "timestamp": "2025-12-31T12:01:46.323Z",
+            "flagged": true,
+            "type": "text",
+            "metadata": {
+              "source": "mock",
+              "length": 100
+            }
+          }
+        ],
+        "total": 1,
+        "page": 1,
+        "limit": 1
+      },
+      "feedback": {
+        "success": true,
+        "confidence": 0.9,
+        "timestamp": "2025-12-31T12:01:46.358Z",
+        "feedbackId": "fb_1767182506358",
+        "rlReward": {
+          "reward": 0.1
+        },
+        "confidenceScore": 0.9
+      },
+      "analytics": {
+        "status": "success",
+        "analytics": {
+          "total_queries": 42,
+          "avg_response_time": 1.1
+        },
+        "timestamp": "2025-12-31T12:01:46.361Z"
+      },
+      "nlp": {
+        "status": "success",
+        "analysis": {
+          "sentiment": {
+            "score": 0.5,
+            "label": "neutral",
+            "confidence": 0.8
+          },
+          "summary": "Mock analysis of: This is a positive message about communi"
+        },
+        "timestamp": "2025-12-31T12:01:46.363Z"
+      },
+      "tags": {
+        "status": "success",
+        "tags": [
+          {
+            "tag": "mock",
+            "score": 0.8
+          },
+          {
+            "tag": "test",
+            "score": 0.75
+          },
+          {
+            "tag": "integration",
+            "score": 0.7000000000000001
+          },
+          {
+            "tag": "sample",
+            "score": 0.65
+          }
+        ],
+        "total_tags": 4,
+        "timestamp": "2025-12-31T12:01:46.366Z"
+      }
+    },
+    {
+      "id": "spam_content_002",
+      "scenario": "Click here to win $1000000! Limited time offer! Bu",
+      "apiCalls": [
+        "GET /moderate",
+        "POST /feedback",
+        "GET /kb-analytics",
+        "GET /nlp/context",
+        "GET /tag"
+      ],
+      "errors": [],
+      "moderation": {
+        "data": [
+          {
+            "id": "mod_1_0",
+            "content": "Mock content 1 for moderation",
+            "decision": "pending",
+            "confidence": 0.7,
+            "timestamp": "2025-12-31T12:01:46.585Z",
+            "flagged": true,
+            "type": "text",
+            "metadata": {
+              "source": "mock",
+              "length": 100
+            }
+          }
+        ],
+        "total": 1,
+        "page": 1,
+        "limit": 1
+      },
+      "feedback": {
+        "success": true,
+        "confidence": 0.9,
+        "timestamp": "2025-12-31T12:01:46.588Z",
+        "feedbackId": "fb_1767182506588",
+        "rlReward": {
+          "reward": 0.1
+        },
+        "confidenceScore": 0.9
+      },
+      "analytics": {
+        "status": "success",
+        "analytics": {
+          "total_queries": 42,
+          "avg_response_time": 1.1
+        },
+        "timestamp": "2025-12-31T12:01:46.590Z"
+      },
+      "nlp": {
+        "status": "success",
+        "analysis": {
+          "sentiment": {
+            "score": 0.5,
+            "label": "neutral",
+            "confidence": 0.8
+          },
+          "summary": "Mock analysis of: Click here to win $1000000! Limited time"
+        },
+        "timestamp": "2025-12-31T12:01:46.593Z"
+      },
+      "tags": {
+        "status": "success",
+        "tags": [
+          {
+            "tag": "mock",
+            "score": 0.8
+          },
+          {
+            "tag": "test",
+            "score": 0.75
+          },
+          {
+            "tag": "integration",
+            "score": 0.7000000000000001
+          },
+          {
+            "tag": "sample",
+            "score": 0.65
+          }
+        ],
+        "total_tags": 4,
+        "timestamp": "2025-12-31T12:01:46.595Z"
+      }
+    },
+    {
+      "id": "neutral_content_003",
+      "scenario": "The weather is nice today. I went for a walk in th",
+      "apiCalls": [
+        "GET /moderate",
+        "POST /feedback",
+        "GET /kb-analytics",
+        "GET /nlp/context",
+        "GET /tag"
+      ],
+      "errors": [],
+      "moderation": {
+        "data": [
+          {
+            "id": "mod_1_0",
+            "content": "Mock content 1 for moderation",
+            "decision": "pending",
+            "confidence": 0.7,
+            "timestamp": "2025-12-31T12:01:46.802Z",
+            "flagged": true,
+            "type": "text",
+            "metadata": {
+              "source": "mock",
+              "length": 100
+            }
+          }
+        ],
+        "total": 1,
+        "page": 1,
+        "limit": 1
+      },
+      "feedback": {
+        "success": true,
+        "confidence": 0.9,
+        "timestamp": "2025-12-31T12:01:46.804Z",
+        "feedbackId": "fb_1767182506804",
+        "rlReward": {
+          "reward": 0.1
+        },
+        "confidenceScore": 0.9
+      },
+      "analytics": {
+        "status": "success",
+        "analytics": {
+          "total_queries": 42,
+          "avg_response_time": 1.1
+        },
+        "timestamp": "2025-12-31T12:01:46.806Z"
+      },
+      "nlp": {
+        "status": "success",
+        "analysis": {
+          "sentiment": {
+            "score": 0.5,
+            "label": "neutral",
+            "confidence": 0.8
+          },
+          "summary": "Mock analysis of: The weather is nice today. I went for a "
+        },
+        "timestamp": "2025-12-31T12:01:46.807Z"
+      },
+      "tags": {
+        "status": "success",
+        "tags": [
+          {
+            "tag": "mock",
+            "score": 0.8
+          },
+          {
+            "tag": "test",
+            "score": 0.75
+          },
+          {
+            "tag": "integration",
+            "score": 0.7000000000000001
+          },
+          {
+            "tag": "sample",
+            "score": 0.65
+          }
+        ],
+        "total_tags": 4,
+        "timestamp": "2025-12-31T12:01:46.808Z"
+      }
+    },
+    {
+      "id": "borderline_content_004",
+      "scenario": "This might be inappropriate for some audiences but",
+      "apiCalls": [
+        "GET /moderate",
+        "POST /feedback",
+        "GET /kb-analytics",
+        "GET /nlp/context",
+        "GET /tag"
+      ],
+      "errors": [],
+      "moderation": {
+        "data": [
+          {
+            "id": "mod_1_0",
+            "content": "Mock content 1 for moderation",
+            "decision": "pending",
+            "confidence": 0.7,
+            "timestamp": "2025-12-31T12:01:47.020Z",
+            "flagged": true,
+            "type": "text",
+            "metadata": {
+              "source": "mock",
+              "length": 100
+            }
+          }
+        ],
+        "total": 1,
+        "page": 1,
+        "limit": 1
+      },
+      "feedback": {
+        "success": true,
+        "confidence": 0.9,
+        "timestamp": "2025-12-31T12:01:47.022Z",
+        "feedbackId": "fb_1767182507022",
+        "rlReward": {
+          "reward": 0.1
+        },
+        "confidenceScore": 0.9
+      },
+      "analytics": {
+        "status": "success",
+        "analytics": {
+          "total_queries": 42,
+          "avg_response_time": 1.1
+        },
+        "timestamp": "2025-12-31T12:01:47.023Z"
+      },
+      "nlp": {
+        "status": "success",
+        "analysis": {
+          "sentiment": {
+            "score": 0.5,
+            "label": "neutral",
+            "confidence": 0.8
+          },
+          "summary": "Mock analysis of: This might be inappropriate for some aud"
+        },
+        "timestamp": "2025-12-31T12:01:47.025Z"
+      },
+      "tags": {
+        "status": "success",
+        "tags": [
+          {
+            "tag": "mock",
+            "score": 0.8
+          },
+          {
+            "tag": "test",
+            "score": 0.75
+          },
+          {
+            "tag": "integration",
+            "score": 0.7000000000000001
+          },
+          {
+            "tag": "sample",
+            "score": 0.65
+          }
+        ],
+        "total_tags": 4,
+        "timestamp": "2025-12-31T12:01:47.027Z"
+      }
+    },
+    {
+      "id": "educational_content_005",
+      "scenario": "Machine learning algorithms can process large data",
+      "apiCalls": [
+        "GET /moderate",
+        "POST /feedback",
+        "GET /kb-analytics",
+        "GET /nlp/context",
+        "GET /tag"
+      ],
+      "errors": [],
+      "moderation": {
+        "data": [
+          {
+            "id": "mod_1_0",
+            "content": "Mock content 1 for moderation",
+            "decision": "pending",
+            "confidence": 0.7,
+            "timestamp": "2025-12-31T12:01:47.240Z",
+            "flagged": true,
+            "type": "text",
+            "metadata": {
+              "source": "mock",
+              "length": 100
+            }
+          }
+        ],
+        "total": 1,
+        "page": 1,
+        "limit": 1
+      },
+      "feedback": {
+        "success": true,
+        "confidence": 0.9,
+        "timestamp": "2025-12-31T12:01:47.244Z",
+        "feedbackId": "fb_1767182507244",
+        "rlReward": {
+          "reward": 0.1
+        },
+        "confidenceScore": 0.9
+      },
+      "analytics": {
+        "status": "success",
+        "analytics": {
+          "total_queries": 42,
+          "avg_response_time": 1.1
+        },
+        "timestamp": "2025-12-31T12:01:47.247Z"
+      },
+      "nlp": {
+        "status": "success",
+        "analysis": {
+          "sentiment": {
+            "score": 0.5,
+            "label": "neutral",
+            "confidence": 0.8
+          },
+          "summary": "Mock analysis of: Machine learning algorithms can process "
+        },
+        "timestamp": "2025-12-31T12:01:47.250Z"
+      },
+      "tags": {
+        "status": "success",
+        "tags": [
+          {
+            "tag": "mock",
+            "score": 0.8
+          },
+          {
+            "tag": "test",
+            "score": 0.75
+          },
+          {
+            "tag": "integration",
+            "score": 0.7000000000000001
+          },
+          {
+            "tag": "sample",
+            "score": 0.65
+          }
+        ],
+        "total_tags": 4,
+        "timestamp": "2025-12-31T12:01:47.254Z"
+      }
+    },
+    {
+      "id": "copyright_content_006",
+      "scenario": "Here is the complete text of a copyrighted novel t",
+      "apiCalls": [
+        "GET /moderate",
+        "POST /feedback",
+        "GET /kb-analytics",
+        "GET /nlp/context",
+        "GET /tag"
+      ],
+      "errors": [],
+      "moderation": {
+        "data": [
+          {
+            "id": "mod_1_0",
+            "content": "Mock content 1 for moderation",
+            "decision": "pending",
+            "confidence": 0.7,
+            "timestamp": "2025-12-31T12:01:47.457Z",
+            "flagged": true,
+            "type": "text",
+            "metadata": {
+              "source": "mock",
+              "length": 100
+            }
+          }
+        ],
+        "total": 1,
+        "page": 1,
+        "limit": 1
+      },
+      "feedback": {
+        "success": true,
+        "confidence": 0.9,
+        "timestamp": "2025-12-31T12:01:47.461Z",
+        "feedbackId": "fb_1767182507461",
+        "rlReward": {
+          "reward": 0.1
+        },
+        "confidenceScore": 0.9
+      },
+      "analytics": {
+        "status": "success",
+        "analytics": {
+          "total_queries": 42,
+          "avg_response_time": 1.1
+        },
+        "timestamp": "2025-12-31T12:01:47.464Z"
+      },
+      "nlp": {
+        "status": "success",
+        "analysis": {
+          "sentiment": {
+            "score": 0.5,
+            "label": "neutral",
+            "confidence": 0.8
+          },
+          "summary": "Mock analysis of: Here is the complete text of a copyright"
+        },
+        "timestamp": "2025-12-31T12:01:47.466Z"
+      },
+      "tags": {
+        "status": "success",
+        "tags": [
+          {
+            "tag": "mock",
+            "score": 0.8
+          },
+          {
+            "tag": "test",
+            "score": 0.75
+          },
+          {
+            "tag": "integration",
+            "score": 0.7000000000000001
+          },
+          {
+            "tag": "sample",
+            "score": 0.65
+          }
+        ],
+        "total_tags": 4,
+        "timestamp": "2025-12-31T12:01:47.469Z"
+      }
+    },
+    {
+      "id": "promotional_content_007",
+      "scenario": "Check out our new product launch! Limited time dis",
+      "apiCalls": [
+        "GET /moderate",
+        "POST /feedback",
+        "GET /kb-analytics",
+        "GET /nlp/context",
+        "GET /tag"
+      ],
+      "errors": [],
+      "moderation": {
+        "data": [
+          {
+            "id": "mod_1_0",
+            "content": "Mock content 1 for moderation",
+            "decision": "pending",
+            "confidence": 0.7,
+            "timestamp": "2025-12-31T12:01:47.675Z",
+            "flagged": true,
+            "type": "text",
+            "metadata": {
+              "source": "mock",
+              "length": 100
+            }
+          }
+        ],
+        "total": 1,
+        "page": 1,
+        "limit": 1
+      },
+      "feedback": {
+        "success": true,
+        "confidence": 0.9,
+        "timestamp": "2025-12-31T12:01:47.679Z",
+        "feedbackId": "fb_1767182507679",
+        "rlReward": {
+          "reward": 0.1
+        },
+        "confidenceScore": 0.9
+      },
+      "analytics": {
+        "status": "success",
+        "analytics": {
+          "total_queries": 42,
+          "avg_response_time": 1.1
+        },
+        "timestamp": "2025-12-31T12:01:47.681Z"
+      },
+      "nlp": {
+        "status": "success",
+        "analysis": {
+          "sentiment": {
+            "score": 0.5,
+            "label": "neutral",
+            "confidence": 0.8
+          },
+          "summary": "Mock analysis of: Check out our new product launch! Limite"
+        },
+        "timestamp": "2025-12-31T12:01:47.683Z"
+      },
+      "tags": {
+        "status": "success",
+        "tags": [
+          {
+            "tag": "mock",
+            "score": 0.8
+          },
+          {
+            "tag": "test",
+            "score": 0.75
+          },
+          {
+            "tag": "integration",
+            "score": 0.7000000000000001
+          },
+          {
+            "tag": "sample",
+            "score": 0.65
+          }
+        ],
+        "total_tags": 4,
+        "timestamp": "2025-12-31T12:01:47.686Z"
+      }
+    },
+    {
+      "id": "technical_content_008",
+      "scenario": "The API endpoint returns a 404 error when the reso",
+      "apiCalls": [
+        "GET /moderate",
+        "POST /feedback",
+        "GET /kb-analytics",
+        "GET /nlp/context",
+        "GET /tag"
+      ],
+      "errors": [],
+      "moderation": {
+        "data": [
+          {
+            "id": "mod_1_0",
+            "content": "Mock content 1 for moderation",
+            "decision": "pending",
+            "confidence": 0.7,
+            "timestamp": "2025-12-31T12:01:47.893Z",
+            "flagged": true,
+            "type": "text",
+            "metadata": {
+              "source": "mock",
+              "length": 100
+            }
+          }
+        ],
+        "total": 1,
+        "page": 1,
+        "limit": 1
+      },
+      "feedback": {
+        "success": true,
+        "confidence": 0.9,
+        "timestamp": "2025-12-31T12:01:47.896Z",
+        "feedbackId": "fb_1767182507896",
+        "rlReward": {
+          "reward": 0.1
+        },
+        "confidenceScore": 0.9
+      },
+      "analytics": {
+        "status": "success",
+        "analytics": {
+          "total_queries": 42,
+          "avg_response_time": 1.1
+        },
+        "timestamp": "2025-12-31T12:01:47.899Z"
+      },
+      "nlp": {
+        "status": "success",
+        "analysis": {
+          "sentiment": {
+            "score": 0.5,
+            "label": "neutral",
+            "confidence": 0.8
+          },
+          "summary": "Mock analysis of: The API endpoint returns a 404 error whe"
+        },
+        "timestamp": "2025-12-31T12:01:47.901Z"
+      },
+      "tags": {
+        "status": "success",
+        "tags": [
+          {
+            "tag": "mock",
+            "score": 0.8
+          },
+          {
+            "tag": "test",
+            "score": 0.75
+          },
+          {
+            "tag": "integration",
+            "score": 0.7000000000000001
+          },
+          {
+            "tag": "sample",
+            "score": 0.65
+          }
+        ],
+        "total_tags": 4,
+        "timestamp": "2025-12-31T12:01:47.904Z"
+      }
+    },
+    {
+      "id": "controversial_content_009",
+      "scenario": "Political opinions that some might find divisive o",
+      "apiCalls": [
+        "GET /moderate",
+        "POST /feedback",
+        "GET /kb-analytics",
+        "GET /nlp/context",
+        "GET /tag"
+      ],
+      "errors": [],
+      "moderation": {
+        "data": [
+          {
+            "id": "mod_1_0",
+            "content": "Mock content 1 for moderation",
+            "decision": "pending",
+            "confidence": 0.7,
+            "timestamp": "2025-12-31T12:01:48.111Z",
+            "flagged": true,
+            "type": "text",
+            "metadata": {
+              "source": "mock",
+              "length": 100
+            }
+          }
+        ],
+        "total": 1,
+        "page": 1,
+        "limit": 1
+      },
+      "feedback": {
+        "success": true,
+        "confidence": 0.9,
+        "timestamp": "2025-12-31T12:01:48.114Z",
+        "feedbackId": "fb_1767182508114",
+        "rlReward": {
+          "reward": 0.1
+        },
+        "confidenceScore": 0.9
+      },
+      "analytics": {
+        "status": "success",
+        "analytics": {
+          "total_queries": 42,
+          "avg_response_time": 1.1
+        },
+        "timestamp": "2025-12-31T12:01:48.115Z"
+      },
+      "nlp": {
+        "status": "success",
+        "analysis": {
+          "sentiment": {
+            "score": 0.5,
+            "label": "neutral",
+            "confidence": 0.8
+          },
+          "summary": "Mock analysis of: Political opinions that some might find "
+        },
+        "timestamp": "2025-12-31T12:01:48.117Z"
+      },
+      "tags": {
+        "status": "success",
+        "tags": [
+          {
+            "tag": "mock",
+            "score": 0.8
+          },
+          {
+            "tag": "test",
+            "score": 0.75
+          },
+          {
+            "tag": "integration",
+            "score": 0.7000000000000001
+          },
+          {
+            "tag": "sample",
+            "score": 0.65
+          }
+        ],
+        "total_tags": 4,
+        "timestamp": "2025-12-31T12:01:48.119Z"
+      }
+    },
+    {
+      "id": "medical_content_010",
+      "scenario": "This is not medical advice. Please consult a healt",
+      "apiCalls": [
+        "GET /moderate",
+        "POST /feedback",
+        "GET /kb-analytics",
+        "GET /nlp/context",
+        "GET /tag"
+      ],
+      "errors": [],
+      "moderation": {
+        "data": [
+          {
+            "id": "mod_1_0",
+            "content": "Mock content 1 for moderation",
+            "decision": "pending",
+            "confidence": 0.7,
+            "timestamp": "2025-12-31T12:01:48.333Z",
+            "flagged": true,
+            "type": "text",
+            "metadata": {
+              "source": "mock",
+              "length": 100
+            }
+          }
+        ],
+        "total": 1,
+        "page": 1,
+        "limit": 1
+      },
+      "feedback": {
+        "success": true,
+        "confidence": 0.9,
+        "timestamp": "2025-12-31T12:01:48.337Z",
+        "feedbackId": "fb_1767182508337",
+        "rlReward": {
+          "reward": 0.1
+        },
+        "confidenceScore": 0.9
+      },
+      "analytics": {
+        "status": "success",
+        "analytics": {
+          "total_queries": 42,
+          "avg_response_time": 1.1
+        },
+        "timestamp": "2025-12-31T12:01:48.339Z"
+      },
+      "nlp": {
+        "status": "success",
+        "analysis": {
+          "sentiment": {
+            "score": 0.5,
+            "label": "neutral",
+            "confidence": 0.8
+          },
+          "summary": "Mock analysis of: This is not medical advice. Please consu"
+        },
+        "timestamp": "2025-12-31T12:01:48.341Z"
+      },
+      "tags": {
+        "status": "success",
+        "tags": [
+          {
+            "tag": "mock",
+            "score": 0.8
+          },
+          {
+            "tag": "test",
+            "score": 0.75
+          },
+          {
+            "tag": "integration",
+            "score": 0.7000000000000001
+          },
+          {
+            "tag": "sample",
+            "score": 0.65
+          }
+        ],
+        "total_tags": 4,
+        "timestamp": "2025-12-31T12:01:48.342Z"
+      }
+    },
+    {
+      "id": "gaming_content_011",
+      "scenario": "Just achieved level 100 in my favorite RPG game! S",
+      "apiCalls": [
+        "GET /moderate",
+        "POST /feedback",
+        "GET /kb-analytics",
+        "GET /nlp/context",
+        "GET /tag"
+      ],
+      "errors": [],
+      "moderation": {
+        "data": [
+          {
+            "id": "mod_1_0",
+            "content": "Mock content 1 for moderation",
+            "decision": "pending",
+            "confidence": 0.7,
+            "timestamp": "2025-12-31T12:01:48.550Z",
+            "flagged": true,
+            "type": "text",
+            "metadata": {
+              "source": "mock",
+              "length": 100
+            }
+          }
+        ],
+        "total": 1,
+        "page": 1,
+        "limit": 1
+      },
+      "feedback": {
+        "success": true,
+        "confidence": 0.9,
+        "timestamp": "2025-12-31T12:01:48.553Z",
+        "feedbackId": "fb_1767182508553",
+        "rlReward": {
+          "reward": 0.1
+        },
+        "confidenceScore": 0.9
+      },
+      "analytics": {
+        "status": "success",
+        "analytics": {
+          "total_queries": 42,
+          "avg_response_time": 1.1
+        },
+        "timestamp": "2025-12-31T12:01:48.555Z"
+      },
+      "nlp": {
+        "status": "success",
+        "analysis": {
+          "sentiment": {
+            "score": 0.5,
+            "label": "neutral",
+            "confidence": 0.8
+          },
+          "summary": "Mock analysis of: Just achieved level 100 in my favorite R"
+        },
+        "timestamp": "2025-12-31T12:01:48.557Z"
+      },
+      "tags": {
+        "status": "success",
+        "tags": [
+          {
+            "tag": "mock",
+            "score": 0.8
+          },
+          {
+            "tag": "test",
+            "score": 0.75
+          },
+          {
+            "tag": "integration",
+            "score": 0.7000000000000001
+          },
+          {
+            "tag": "sample",
+            "score": 0.65
+          }
+        ],
+        "total_tags": 4,
+        "timestamp": "2025-12-31T12:01:48.558Z"
+      }
+    },
+    {
+      "id": "recipe_content_012",
+      "scenario": "Here is a simple pasta recipe with tomatoes, garli",
+      "apiCalls": [
+        "GET /moderate",
+        "POST /feedback",
+        "GET /kb-analytics",
+        "GET /nlp/context",
+        "GET /tag"
+      ],
+      "errors": [],
+      "moderation": {
+        "data": [
+          {
+            "id": "mod_1_0",
+            "content": "Mock content 1 for moderation",
+            "decision": "pending",
+            "confidence": 0.7,
+            "timestamp": "2025-12-31T12:01:48.766Z",
+            "flagged": true,
+            "type": "text",
+            "metadata": {
+              "source": "mock",
+              "length": 100
+            }
+          }
+        ],
+        "total": 1,
+        "page": 1,
+        "limit": 1
+      },
+      "feedback": {
+        "success": true,
+        "confidence": 0.9,
+        "timestamp": "2025-12-31T12:01:48.769Z",
+        "feedbackId": "fb_1767182508769",
+        "rlReward": {
+          "reward": 0.1
+        },
+        "confidenceScore": 0.9
+      },
+      "analytics": {
+        "status": "success",
+        "analytics": {
+          "total_queries": 42,
+          "avg_response_time": 1.1
+        },
+        "timestamp": "2025-12-31T12:01:48.771Z"
+      },
+      "nlp": {
+        "status": "success",
+        "analysis": {
+          "sentiment": {
+            "score": 0.5,
+            "label": "neutral",
+            "confidence": 0.8
+          },
+          "summary": "Mock analysis of: Here is a simple pasta recipe with tomat"
+        },
+        "timestamp": "2025-12-31T12:01:48.773Z"
+      },
+      "tags": {
+        "status": "success",
+        "tags": [
+          {
+            "tag": "mock",
+            "score": 0.8
+          },
+          {
+            "tag": "test",
+            "score": 0.75
+          },
+          {
+            "tag": "integration",
+            "score": 0.7000000000000001
+          },
+          {
+            "tag": "sample",
+            "score": 0.65
+          }
+        ],
+        "total_tags": 4,
+        "timestamp": "2025-12-31T12:01:48.775Z"
+      }
+    },
+    {
+      "id": "news_content_013",
+      "scenario": "Breaking: Local government announces new infrastru",
+      "apiCalls": [
+        "GET /moderate",
+        "POST /feedback",
+        "GET /kb-analytics",
+        "GET /nlp/context",
+        "GET /tag"
+      ],
+      "errors": [],
+      "moderation": {
+        "data": [
+          {
+            "id": "mod_1_0",
+            "content": "Mock content 1 for moderation",
+            "decision": "pending",
+            "confidence": 0.7,
+            "timestamp": "2025-12-31T12:01:48.984Z",
+            "flagged": true,
+            "type": "text",
+            "metadata": {
+              "source": "mock",
+              "length": 100
+            }
+          }
+        ],
+        "total": 1,
+        "page": 1,
+        "limit": 1
+      },
+      "feedback": {
+        "success": true,
+        "confidence": 0.9,
+        "timestamp": "2025-12-31T12:01:48.987Z",
+        "feedbackId": "fb_1767182508987",
+        "rlReward": {
+          "reward": 0.1
+        },
+        "confidenceScore": 0.9
+      },
+      "analytics": {
+        "status": "success",
+        "analytics": {
+          "total_queries": 42,
+          "avg_response_time": 1.1
+        },
+        "timestamp": "2025-12-31T12:01:48.989Z"
+      },
+      "nlp": {
+        "status": "success",
+        "analysis": {
+          "sentiment": {
+            "score": 0.5,
+            "label": "neutral",
+            "confidence": 0.8
+          },
+          "summary": "Mock analysis of: Breaking: Local government announces new"
+        },
+        "timestamp": "2025-12-31T12:01:48.991Z"
+      },
+      "tags": {
+        "status": "success",
+        "tags": [
+          {
+            "tag": "mock",
+            "score": 0.8
+          },
+          {
+            "tag": "test",
+            "score": 0.75
+          },
+          {
+            "tag": "integration",
+            "score": 0.7000000000000001
+          },
+          {
+            "tag": "sample",
+            "score": 0.65
+          }
+        ],
+        "total_tags": 4,
+        "timestamp": "2025-12-31T12:01:48.992Z"
+      }
+    },
+    {
+      "id": "programming_content_014",
+      "scenario": "How to implement a binary search algorithm in Pyth",
+      "apiCalls": [
+        "GET /moderate",
+        "POST /feedback",
+        "GET /kb-analytics",
+        "GET /nlp/context",
+        "GET /tag"
+      ],
+      "errors": [],
+      "moderation": {
+        "data": [
+          {
+            "id": "mod_1_0",
+            "content": "Mock content 1 for moderation",
+            "decision": "pending",
+            "confidence": 0.7,
+            "timestamp": "2025-12-31T12:01:49.203Z",
+            "flagged": true,
+            "type": "text",
+            "metadata": {
+              "source": "mock",
+              "length": 100
+            }
+          }
+        ],
+        "total": 1,
+        "page": 1,
+        "limit": 1
+      },
+      "feedback": {
+        "success": true,
+        "confidence": 0.9,
+        "timestamp": "2025-12-31T12:01:49.207Z",
+        "feedbackId": "fb_1767182509207",
+        "rlReward": {
+          "reward": 0.1
+        },
+        "confidenceScore": 0.9
+      },
+      "analytics": {
+        "status": "success",
+        "analytics": {
+          "total_queries": 42,
+          "avg_response_time": 1.1
+        },
+        "timestamp": "2025-12-31T12:01:49.209Z"
+      },
+      "nlp": {
+        "status": "success",
+        "analysis": {
+          "sentiment": {
+            "score": 0.5,
+            "label": "neutral",
+            "confidence": 0.8
+          },
+          "summary": "Mock analysis of: How to implement a binary search algorit"
+        },
+        "timestamp": "2025-12-31T12:01:49.210Z"
+      },
+      "tags": {
+        "status": "success",
+        "tags": [
+          {
+            "tag": "mock",
+            "score": 0.8
+          },
+          {
+            "tag": "test",
+            "score": 0.75
+          },
+          {
+            "tag": "integration",
+            "score": 0.7000000000000001
+          },
+          {
+            "tag": "sample",
+            "score": 0.65
+          }
+        ],
+        "total_tags": 4,
+        "timestamp": "2025-12-31T12:01:49.212Z"
+      }
+    },
+    {
+      "id": "personal_attack_015",
+      "scenario": "You are a stupid person who knows nothing about th",
+      "apiCalls": [
+        "GET /moderate",
+        "POST /feedback",
+        "GET /kb-analytics",
+        "GET /nlp/context",
+        "GET /tag"
+      ],
+      "errors": [],
+      "moderation": {
+        "data": [
+          {
+            "id": "mod_1_0",
+            "content": "Mock content 1 for moderation",
+            "decision": "pending",
+            "confidence": 0.7,
+            "timestamp": "2025-12-31T12:01:49.422Z",
+            "flagged": true,
+            "type": "text",
+            "metadata": {
+              "source": "mock",
+              "length": 100
+            }
+          }
+        ],
+        "total": 1,
+        "page": 1,
+        "limit": 1
+      },
+      "feedback": {
+        "success": true,
+        "confidence": 0.9,
+        "timestamp": "2025-12-31T12:01:49.424Z",
+        "feedbackId": "fb_1767182509424",
+        "rlReward": {
+          "reward": 0.1
+        },
+        "confidenceScore": 0.9
+      },
+      "analytics": {
+        "status": "success",
+        "analytics": {
+          "total_queries": 42,
+          "avg_response_time": 1.1
+        },
+        "timestamp": "2025-12-31T12:01:49.426Z"
+      },
+      "nlp": {
+        "status": "success",
+        "analysis": {
+          "sentiment": {
+            "score": 0.5,
+            "label": "neutral",
+            "confidence": 0.8
+          },
+          "summary": "Mock analysis of: You are a stupid person who knows nothin"
+        },
+        "timestamp": "2025-12-31T12:01:49.427Z"
+      },
+      "tags": {
+        "status": "success",
+        "tags": [
+          {
+            "tag": "mock",
+            "score": 0.8
+          },
+          {
+            "tag": "test",
+            "score": 0.75
+          },
+          {
+            "tag": "integration",
+            "score": 0.7000000000000001
+          },
+          {
+            "tag": "sample",
+            "score": 0.65
+          }
+        ],
+        "total_tags": 4,
+        "timestamp": "2025-12-31T12:01:49.428Z"
+      }
+    },
+    {
+      "id": "product_review_016",
+      "scenario": "This product has great features but poor customer ",
+      "apiCalls": [
+        "GET /moderate",
+        "POST /feedback",
+        "GET /kb-analytics",
+        "GET /nlp/context",
+        "GET /tag"
+      ],
+      "errors": [],
+      "moderation": {
+        "data": [
+          {
+            "id": "mod_1_0",
+            "content": "Mock content 1 for moderation",
+            "decision": "pending",
+            "confidence": 0.7,
+            "timestamp": "2025-12-31T12:01:49.640Z",
+            "flagged": true,
+            "type": "text",
+            "metadata": {
+              "source": "mock",
+              "length": 100
+            }
+          }
+        ],
+        "total": 1,
+        "page": 1,
+        "limit": 1
+      },
+      "feedback": {
+        "success": true,
+        "confidence": 0.9,
+        "timestamp": "2025-12-31T12:01:49.642Z",
+        "feedbackId": "fb_1767182509642",
+        "rlReward": {
+          "reward": 0.1
+        },
+        "confidenceScore": 0.9
+      },
+      "analytics": {
+        "status": "success",
+        "analytics": {
+          "total_queries": 42,
+          "avg_response_time": 1.1
+        },
+        "timestamp": "2025-12-31T12:01:49.643Z"
+      },
+      "nlp": {
+        "status": "success",
+        "analysis": {
+          "sentiment": {
+            "score": 0.5,
+            "label": "neutral",
+            "confidence": 0.8
+          },
+          "summary": "Mock analysis of: This product has great features but poor"
+        },
+        "timestamp": "2025-12-31T12:01:49.644Z"
+      },
+      "tags": {
+        "status": "success",
+        "tags": [
+          {
+            "tag": "mock",
+            "score": 0.8
+          },
+          {
+            "tag": "test",
+            "score": 0.75
+          },
+          {
+            "tag": "integration",
+            "score": 0.7000000000000001
+          },
+          {
+            "tag": "sample",
+            "score": 0.65
+          }
+        ],
+        "total_tags": 4,
+        "timestamp": "2025-12-31T12:01:49.645Z"
+      }
+    },
+    {
+      "id": "advertisement_017",
+      "scenario": "Exclusive offer! Buy one get one free! Click the l",
+      "apiCalls": [
+        "GET /moderate",
+        "POST /feedback",
+        "GET /kb-analytics",
+        "GET /nlp/context",
+        "GET /tag"
+      ],
+      "errors": [],
+      "moderation": {
+        "data": [
+          {
+            "id": "mod_1_0",
+            "content": "Mock content 1 for moderation",
+            "decision": "pending",
+            "confidence": 0.7,
+            "timestamp": "2025-12-31T12:01:49.859Z",
+            "flagged": true,
+            "type": "text",
+            "metadata": {
+              "source": "mock",
+              "length": 100
+            }
+          }
+        ],
+        "total": 1,
+        "page": 1,
+        "limit": 1
+      },
+      "feedback": {
+        "success": true,
+        "confidence": 0.9,
+        "timestamp": "2025-12-31T12:01:49.861Z",
+        "feedbackId": "fb_1767182509861",
+        "rlReward": {
+          "reward": 0.1
+        },
+        "confidenceScore": 0.9
+      },
+      "analytics": {
+        "status": "success",
+        "analytics": {
+          "total_queries": 42,
+          "avg_response_time": 1.1
+        },
+        "timestamp": "2025-12-31T12:01:49.864Z"
+      },
+      "nlp": {
+        "status": "success",
+        "analysis": {
+          "sentiment": {
+            "score": 0.5,
+            "label": "neutral",
+            "confidence": 0.8
+          },
+          "summary": "Mock analysis of: Exclusive offer! Buy one get one free! C"
+        },
+        "timestamp": "2025-12-31T12:01:49.866Z"
+      },
+      "tags": {
+        "status": "success",
+        "tags": [
+          {
+            "tag": "mock",
+            "score": 0.8
+          },
+          {
+            "tag": "test",
+            "score": 0.75
+          },
+          {
+            "tag": "integration",
+            "score": 0.7000000000000001
+          },
+          {
+            "tag": "sample",
+            "score": 0.65
+          }
+        ],
+        "total_tags": 4,
+        "timestamp": "2025-12-31T12:01:49.868Z"
+      }
+    },
+    {
+      "id": "complaint_018",
+      "scenario": "I am disappointed with the service quality and wan",
+      "apiCalls": [
+        "GET /moderate",
+        "POST /feedback",
+        "GET /kb-analytics",
+        "GET /nlp/context",
+        "GET /tag"
+      ],
+      "errors": [],
+      "moderation": {
+        "data": [
+          {
+            "id": "mod_1_0",
+            "content": "Mock content 1 for moderation",
+            "decision": "pending",
+            "confidence": 0.7,
+            "timestamp": "2025-12-31T12:01:50.075Z",
+            "flagged": true,
+            "type": "text",
+            "metadata": {
+              "source": "mock",
+              "length": 100
+            }
+          }
+        ],
+        "total": 1,
+        "page": 1,
+        "limit": 1
+      },
+      "feedback": {
+        "success": true,
+        "confidence": 0.9,
+        "timestamp": "2025-12-31T12:01:50.077Z",
+        "feedbackId": "fb_1767182510077",
+        "rlReward": {
+          "reward": 0.1
+        },
+        "confidenceScore": 0.9
+      },
+      "analytics": {
+        "status": "success",
+        "analytics": {
+          "total_queries": 42,
+          "avg_response_time": 1.1
+        },
+        "timestamp": "2025-12-31T12:01:50.078Z"
+      },
+      "nlp": {
+        "status": "success",
+        "analysis": {
+          "sentiment": {
+            "score": 0.5,
+            "label": "neutral",
+            "confidence": 0.8
+          },
+          "summary": "Mock analysis of: I am disappointed with the service quali"
+        },
+        "timestamp": "2025-12-31T12:01:50.080Z"
+      },
+      "tags": {
+        "status": "success",
+        "tags": [
+          {
+            "tag": "mock",
+            "score": 0.8
+          },
+          {
+            "tag": "test",
+            "score": 0.75
+          },
+          {
+            "tag": "integration",
+            "score": 0.7000000000000001
+          },
+          {
+            "tag": "sample",
+            "score": 0.65
+          }
+        ],
+        "total_tags": 4,
+        "timestamp": "2025-12-31T12:01:50.081Z"
+      }
+    },
+    {
+      "id": "celebration_019",
+      "scenario": "Happy birthday to my best friend! Hope you have an",
+      "apiCalls": [
+        "GET /moderate",
+        "POST /feedback",
+        "GET /kb-analytics",
+        "GET /nlp/context",
+        "GET /tag"
+      ],
+      "errors": [],
+      "moderation": {
+        "data": [
+          {
+            "id": "mod_1_0",
+            "content": "Mock content 1 for moderation",
+            "decision": "pending",
+            "confidence": 0.7,
+            "timestamp": "2025-12-31T12:01:50.294Z",
+            "flagged": true,
+            "type": "text",
+            "metadata": {
+              "source": "mock",
+              "length": 100
+            }
+          }
+        ],
+        "total": 1,
+        "page": 1,
+        "limit": 1
+      },
+      "feedback": {
+        "success": true,
+        "confidence": 0.9,
+        "timestamp": "2025-12-31T12:01:50.297Z",
+        "feedbackId": "fb_1767182510297",
+        "rlReward": {
+          "reward": 0.1
+        },
+        "confidenceScore": 0.9
+      },
+      "analytics": {
+        "status": "success",
+        "analytics": {
+          "total_queries": 42,
+          "avg_response_time": 1.1
+        },
+        "timestamp": "2025-12-31T12:01:50.298Z"
+      },
+      "nlp": {
+        "status": "success",
+        "analysis": {
+          "sentiment": {
+            "score": 0.5,
+            "label": "neutral",
+            "confidence": 0.8
+          },
+          "summary": "Mock analysis of: Happy birthday to my best friend! Hope y"
+        },
+        "timestamp": "2025-12-31T12:01:50.300Z"
+      },
+      "tags": {
+        "status": "success",
+        "tags": [
+          {
+            "tag": "mock",
+            "score": 0.8
+          },
+          {
+            "tag": "test",
+            "score": 0.75
+          },
+          {
+            "tag": "integration",
+            "score": 0.7000000000000001
+          },
+          {
+            "tag": "sample",
+            "score": 0.65
+          }
+        ],
+        "total_tags": 4,
+        "timestamp": "2025-12-31T12:01:50.302Z"
+      }
+    },
+    {
+      "id": "question_content_020",
+      "scenario": "What are the best practices for web development in",
+      "apiCalls": [
+        "GET /moderate",
+        "POST /feedback",
+        "GET /kb-analytics",
+        "GET /nlp/context",
+        "GET /tag"
+      ],
+      "errors": [],
+      "moderation": {
+        "data": [
+          {
+            "id": "mod_1_0",
+            "content": "Mock content 1 for moderation",
+            "decision": "pending",
+            "confidence": 0.7,
+            "timestamp": "2025-12-31T12:01:50.509Z",
+            "flagged": true,
+            "type": "text",
+            "metadata": {
+              "source": "mock",
+              "length": 100
+            }
+          }
+        ],
+        "total": 1,
+        "page": 1,
+        "limit": 1
+      },
+      "feedback": {
+        "success": true,
+        "confidence": 0.9,
+        "timestamp": "2025-12-31T12:01:50.511Z",
+        "feedbackId": "fb_1767182510511",
+        "rlReward": {
+          "reward": 0.1
+        },
+        "confidenceScore": 0.9
+      },
+      "analytics": {
+        "status": "success",
+        "analytics": {
+          "total_queries": 42,
+          "avg_response_time": 1.1
+        },
+        "timestamp": "2025-12-31T12:01:50.513Z"
+      },
+      "nlp": {
+        "status": "success",
+        "analysis": {
+          "sentiment": {
+            "score": 0.5,
+            "label": "neutral",
+            "confidence": 0.8
+          },
+          "summary": "Mock analysis of: What are the best practices for web deve"
+        },
+        "timestamp": "2025-12-31T12:01:50.515Z"
+      },
+      "tags": {
+        "status": "success",
+        "tags": [
+          {
+            "tag": "mock",
+            "score": 0.8
+          },
+          {
+            "tag": "test",
+            "score": 0.75
+          },
+          {
+            "tag": "integration",
+            "score": 0.7000000000000001
+          },
+          {
+            "tag": "sample",
+            "score": 0.65
+          }
+        ],
+        "total_tags": 4,
+        "timestamp": "2025-12-31T12:01:50.517Z"
+      }
+    }
+  ]
+}

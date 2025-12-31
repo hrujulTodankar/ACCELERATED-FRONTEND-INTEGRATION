@@ -44,7 +44,7 @@ const ModerationCard: React.FC<ModerationCardProps> = ({ content, onFeedback, lo
   return (
     <div 
       className={`bg-white rounded-lg shadow p-6 mb-4 hover:shadow-md transition-shadow duration-200 cursor-pointer ${
-        content.statusBadge?.type === 'updated' ? 'ring-2 ring-green-300 animate-pulse' : ''
+        content.statusBadge?.type === 'updated' ? 'ring-2 ring-green-300' : ''
       }`}
       onClick={onClick}
     >

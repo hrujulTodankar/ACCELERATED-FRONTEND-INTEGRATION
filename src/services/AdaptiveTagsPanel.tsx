@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { getTags } from '../../services/apiService';
-import { TagResponse } from '../../types';
+import { getTags } from './apiService';
+import { TagResponse } from '../types';
 
 interface AdaptiveTagsPanelProps {
   itemId: string;

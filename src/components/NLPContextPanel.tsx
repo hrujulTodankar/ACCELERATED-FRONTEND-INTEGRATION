@@ -49,6 +49,11 @@ const NLPContextPanel: React.FC<NLPContextPanelProps> = ({ nlpData, loading = fa
   };
 
   const getEntityColor = (label: string) => {
+    // Handle undefined, null, or empty labels
+    if (!label || typeof label !== 'string') {
+      return 'bg-gray-100 text-gray-800';
+    }
+    
     switch (label.toLowerCase()) {
       case 'person':
         return 'bg-blue-100 text-blue-800';
@@ -83,19 +88,30 @@ const NLPContextPanel: React.FC<NLPContextPanelProps> = ({ nlpData, loading = fa
           <div>
             <h4 className="text-sm font-medium mb-2">Entities</h4>
             <div className="flex flex-wrap gap-2">
-              {nlpData.entities.map((entity, index) => (
-                <div 
-                  key={index}
-                  className="flex items-center space-x-1"
-                >
-                  <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${getEntityColor(entity.label)}`}>
-                    {entity.text}
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    ({entity.confidence.toFixed(2)})
-                  </span>
-                </div>
-              ))}
+              {nlpData.entities.map((entity, index) => {
+                // Safety check for entity data
+                if (!entity || typeof entity !== 'object') {
+                  return null;
+                }
+                
+                const entityText = entity.text || 'Unknown';
+                const entityLabel = entity.label || 'misc';
+                const entityConfidence = typeof entity.confidence === 'number' ? entity.confidence : 0.5;
+                
+                return (
+                  <div 
+                    key={`entity-${index}-${entityText}`}
+                    className="flex items-center space-x-1"
+                  >
+                    <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${getEntityColor(entityLabel)}`}>
+                      {entityText}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      ({entityConfidence.toFixed(2)})
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
